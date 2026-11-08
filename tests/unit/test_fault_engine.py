@@ -44,6 +44,37 @@ def test_engine_dropout_preserves_unaffected_data_and_records_event():
     assert len(execution.result.events) == 2
 
 
+def test_engine_packet_loss_probability_zero_preserves_packets_and_marks_no_effect():
+    scenario = _scenario(FaultType.PACKET_LOSS, {"loss_probability": 0.0})
+    execution = FaultInjectionEngine().run(_envelopes(), scenario)
+    assert len(execution.output_envelopes) == 3
+    assert execution.result.applied_count == 2
+    assert all(not event.affected for event in execution.result.events)
+
+
+def test_engine_packet_loss_probability_one_drops_only_target_sensor_packets():
+    scenario = _scenario(FaultType.PACKET_LOSS, {"loss_probability": 1.0})
+    execution = FaultInjectionEngine().run(_envelopes(), scenario)
+    assert [item.sensor_id for item in execution.output_envelopes] == ["imu"]
+    assert execution.result.applied_count == 2
+    assert all(event.affected for event in execution.result.events)
+
+
+def test_engine_burst_loss_drops_only_packets_inside_burst_intervals():
+    inputs = tuple(
+        RawMeasurementEnvelope("gps", timestamp, timestamp + 0.01, index, {"z": [index]})
+        for index, timestamp in enumerate((1.0, 2.0, 3.0, 4.0, 5.0))
+    )
+    scenario = FaultScenario(
+        "gps-bursts", FaultType.INTERMITTENT_OUTAGE, ("gps",), 0.0, 10.0, 3,
+        {"burst_intervals_s": [[2.0, 4.0]]},
+    )
+    execution = FaultInjectionEngine().run(inputs, scenario)
+    assert [item.sequence_number for item in execution.output_envelopes] == [0, 3, 4]
+    assert execution.result.applied_count == 2
+    assert execution.result.skipped_count == 3
+
+
 def test_engine_reorders_by_arrival_but_retains_sequence_identity():
     inputs = (
         RawMeasurementEnvelope("gps", 1.0, 1.0, 0, {"z": [1.0]}),
