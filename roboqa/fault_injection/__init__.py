@@ -35,6 +35,11 @@ from roboqa.fault_injection.provenance import (
     validate_sha256,
     validate_utc_timestamp,
 )
+from roboqa.fault_injection.scheduler import (
+    FaultSchedule,
+    ScheduledFaultOccurrence,
+    TemporalScheduler,
+)
 
 __all__ = [
     "ContractError", "FaultEvent", "FaultOperator", "FaultResult", "FaultScenario",
@@ -43,6 +48,7 @@ __all__ = [
     "ArrivalShiftOperator", "BiasOperator", "DelayOperator", "DropoutOperator",
     "DuplicateOperator", "EnvelopeFaultOperator", "InvalidPayloadOperator",
     "OutlierOperator", "PacketLossOperator", "FaultProvenance",
+    "FaultSchedule", "ScheduledFaultOccurrence", "TemporalScheduler",
     "build_configuration_hash", "canonical_json", "sha256_digest",
     "validate_sha256", "validate_utc_timestamp",
 ]
