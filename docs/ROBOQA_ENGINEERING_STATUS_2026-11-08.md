@@ -417,3 +417,28 @@ Proceed to Phase 4.5-C/D with a separately specified adapter and Fusion scheduli
 ### Manual Colab gate
 
 Sync branch `feat/measurement-adapter-phase-4-5c`, then run the targeted adapter tests, targeted Ruff/compileall, full pytest, full Ruff, and full compileall. Keep PR #16 Draft until outputs are reviewed.
+
+
+---
+
+## 19. Engineering addendum — Phase 4.5-C Measurement adapter validation (2026-11-08)
+
+### Phase 4.5-C — Strict Measurement Adapter: VALIDATION PASS
+
+- Branch: `feat/measurement-adapter-phase-4-5c`.
+- Validated code checkpoint: `77f0e6e267f08f86ddc7f1468da0b9d474d348ef`; subsequent changes in this checkpoint are limited to a test assertion and import ordering.
+- Base: Phase 4.5-B validated checkpoint `7fd0fd808b3732392775d0dc28e52127ec9a8924`.
+- PR #16: https://github.com/edu-moraess/roboqa-lab/pull/16 — remains Draft, open, and unmerged; targets `feat/temporal-replay-phase-4-5b`, not `main`.
+- Manual Colab targeted adapter tests: **10 passed**.
+- Manual Colab full `python -m pytest -q`: exit code **0**, no failures reported. The captured output did not expose an unambiguous aggregate test count; no total is inferred.
+- Full `ruff check roboqa tests`: **All checks passed!**
+- Full `python -m compileall -q roboqa tests`: exit code **0**.
+- The first validation exposed a test assertion regex case mismatch (`dim` versus the Portuguese message beginning with `Dimensão`), not an adapter behavior defect. The assertion was made case-insensitive. Ruff also identified import ordering in `roboqa/integration/__init__.py`; imports were reordered.
+- The two corrections changed only `tests/unit/test_measurement_adapter.py` and `roboqa/integration/__init__.py`; the production adapter implementation was not changed. `git diff --check` passed.
+- Result: **VALIDATION PASS** for the strict Measurement adapter contracts and repository compatibility.
+- Scope limitation remains: the adapter maps acquisition time to `Measurement.t`, preserves arrival/processing clocks as metadata, and does not change `run_filter` sorting. This is not evidence of arrival-order Fusion execution or end-to-end Fusion Telemetry → Quality Metrics → Quality Gate integration.
+- No training, inference, dataset downloads, CI/GitHub Actions, merge, or changes to `main` were performed.
+
+### Next engineering step
+
+Phase 4.5-D should specify and test the Fusion scheduling boundary explicitly: whether accepted measurements execute in acquisition/event-time order or arrival order, how late/duplicate/dropped decisions influence execution and telemetry, and how replay evidence propagates into Quality Metrics and the deterministic Quality Gate. Preserve the Quality Gate as the sole decision authority.
