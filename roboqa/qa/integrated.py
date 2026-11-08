@@ -90,6 +90,10 @@ def _validate_evidence(
         )
     if execution_record.run_id != replay_summary.run_id:
         raise IntegratedQualityError("replay and execution run IDs do not match")
+    if result.status is not execution_record.filter_status:
+        raise IntegratedQualityError("FilterResult status differs from execution record")
+    if result.diagnostics.n_predict != execution_record.n_predict:
+        raise IntegratedQualityError("FilterResult prediction count differs from execution record")
     if result.diagnostics.n_update != execution_record.updated_count:
         raise IntegratedQualityError("FilterResult update count differs from execution outcomes")
     if result.diagnostics.n_rejected != execution_record.n_rejected:
