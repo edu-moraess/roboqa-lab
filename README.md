@@ -6,23 +6,25 @@ ARQTECH LABS — Operação RoboQA
 
 ## Status
 
-| Component              | Version | Status   |
-|------------------------|---------|----------|
-| Data Engine (Fase 1)   | 0.1.0   | Hardened |
-| Fusion Engine (Fase 2) | —       | Pending  |
-| Fault Injection        | —       | Pending  |
-| Quality Gate           | —       | Pending  |
-| Streamlit Control Center | —     | Pending  |
+| Component              | Version | Status        |
+|------------------------|---------|---------------|
+| Data Engine (Fase 1)   | 0.1.0   | PASS          |
+| Fusion Engine (Fase 2) | 0.2.0   | Implemented   |
+| Fault Injection        | —       | Pending       |
+| Quality Gate           | —       | Pending       |
+| Streamlit Control Center | —     | Pending       |
 
 ## Phase 1 — Data Engine
 
-Contratos robustos para:
+Contratos robustos para GroundTruth, Measurement, gerador sintético e loader KITTI com proveniência explícita e arrays somente leitura.
 
-- `GroundTruth` — trajetória de referência com validação dimensional, temporal e de proveniência.
-- `Measurement` — medição sensorial com validação de covariância (simetria + PSD).
-- Gerador sintético determinístico (`make_synthetic_ground_truth`).
-- Loader KITTI OXTS com política explícita de fallback (sem silêncio).
-- Proveniência discriminada: `kitti_real` | `synthetic` | `derived`.
+## Phase 2 — Fusion Engine
+
+- Modelo CTRV com Jacobiano analítico validado por diferenças finitas
+- EKF com atualização de Joseph e ruído de processo dependente de Δt
+- Sensores: GPS, speed, yaw_rate
+- Runner assíncrono com ordenação determinística (t, sensor)
+- `simulate_measurements` + experimento sintético reproduzível
 
 ### Instalação rápida
 
@@ -31,9 +33,19 @@ pip install -e ".[dev]"
 pytest -q
 ```
 
-### Proveniência
+### Experimento sintético
 
-Todos os objetos de dados carregam o campo `source`. Medições de sensores são sempre simuladas; a trajetória pode ser real (KITTI) ou sintética.
+```python
+from roboqa.data.synthetic import make_synthetic_ground_truth
+from roboqa.fusion import simulate_measurements, run_filter
+
+gt = make_synthetic_ground_truth(n=100, seed=42)
+ms = simulate_measurements(gt, seed=42)
+result = run_filter(ms, provenance={"gt_source": gt.source, "seed": 42})
+print(result.status, result.diagnostics.n_update)
+```
+
+### Proveniência
 
 ```
 Trajetória baseada em dados reais do KITTI (quando disponível).
