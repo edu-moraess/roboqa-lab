@@ -298,12 +298,12 @@ Phase 4.5-C was manually validated in Colab on code checkpoint `77f0e6e267f08f86
 - Immutable evaluation contracts for confusion counts, classification metrics, sample accounting, overall/run/scenario slices, and provenance-bound reports.
 - TRAIN evaluation is prohibited; UNKNOWN references and UNSCORABLE predictions remain separately accounted; undefined ratios remain null.
 - Manual Colab evidence recorded in PR #22: 33 targeted tests passed; full pytest exit code 0; Ruff and compileall passed. Aggregate full-suite count was not exposed.
-- Validated production checkpoint: \`60e866c7120578fa6a0aafe97126ce3971a9545e\`.
+- Validated production checkpoint: `60e866c7120578fa6a0aafe97126ce3971a9545e`.
 - Specification: [Phase 4.4-D0](docs/phase-4-4d0-anomaly-evaluation-contracts.md).
 
 ### Phase 4.4-D1 — Anomaly Evaluation Engine (IMPLEMENTED — VALIDATION PENDING)
 
-- Adds \`evaluate_anomaly_predictions\`, exported from \`roboqa.ml\`.
+- Adds `evaluate_anomaly_predictions`, exported from `roboqa.ml`.
 - Requires exactly one prediction per dataset sample and validates sample/run/split identity; duplicate, missing, unknown, and mismatched identities fail closed.
 - Computes TP/FP/TN/FN and precision, recall, F1, specificity, FPR, FNR, and balanced accuracy.
 - Produces deterministic overall, per-run, and per-scenario slices; UNKNOWN and UNSCORABLE remain outside the confusion matrix and are explicitly counted.
