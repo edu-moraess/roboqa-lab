@@ -44,7 +44,7 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 4.4-A | ML Feature/Dataset Contracts | **VALIDATED — TARGETED + FULL SUITE, RUFF, COMPILEALL** |
 | 4.4-B | Temporal feature extraction from Fusion innovation telemetry | **VALIDATED — 42 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.4-C | Statistical anomaly baseline + optional Isolation Forest (advisory only) | **VALIDATED — 57 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL; scikit-learn 1.6.1** |
-| 4.4-D0 | Immutable anomaly evaluation contracts (overall/run/scenario) | **IMPLEMENTED — MANUAL COLAB VALIDATION PENDING** |
+| 4.4-D0 | Immutable anomaly evaluation contracts (overall/run/scenario) | **VALIDATED — FULL MANUAL COLAB PASS** |
 | 4.5-A | Fault-to-QA Integration Contracts | **VALIDATED — 52 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-B | Deterministic transport replay, watermark, deduplication and packet accounting | **VALIDATED — 19 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-C | Strict Measurement adapter from accepted transport envelopes | **VALIDATED — 10 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
@@ -136,7 +136,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Especificação: [Phase 4.4-C — Advisory Anomaly Baselines](docs/phase-4-4c-advisory-anomaly-baselines.md).
 - Validação manual no Colab: **57 testes direcionados passaram**, incluindo Isolation Forest com scikit-learn 1.6.1; suíte completa Pytest atingiu 100% com exit code 0; Ruff completo e compileall completos passaram. A saída da suíte completa não expôs contagem agregada inequívoca, portanto nenhum total foi inferido.
 
-### Anomaly Evaluation — Fase 4.4-D0 (IMPLEMENTED; VALIDATION PENDING)
+### Anomaly Evaluation — Fase 4.4-D0 (FULL VALIDATION PASS)
 
 - Contratos imutáveis para matriz de confusão, métricas classificatórias, contagens e relatórios de avaliação.
 - Avaliação restrita a VALIDATION/TEST; TRAIN é rejeitado.
