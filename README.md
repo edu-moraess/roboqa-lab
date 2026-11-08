@@ -28,9 +28,9 @@ Contratos robustos para GroundTruth, Measurement, gerador sintético e loader KI
 
 ### Modelo de ruído de processo
 
-O ruído de processo usa, nesta implementação, um modelo discreto de aceleração longitudinal e angular aleatória, constante durante cada intervalo de integração (zero-order hold). sigma_a representa o desvio-padrão da aceleração longitudinal em m/s²; sigma_alpha, o desvio-padrão da aceleração angular em rad/s². A matriz é construída como Q = B diag(sigma_a², sigma_alpha²) B.T, incluindo covariâncias cruzadas posição–velocidade e yaw–taxa de yaw. Portanto, este contrato **não** deve ser interpretado como discretização de ruído branco contínuo.
+O ruído de processo usa um modelo discreto de aceleração longitudinal e angular aleatória, constante durante cada intervalo de integração (zero-order hold). sigma_a representa o desvio-padrão da aceleração longitudinal em m/s²; sigma_alpha, o desvio-padrão da aceleração angular em rad/s². A matriz é construída como Q = B diag(sigma_a², sigma_alpha²) B.T, incluindo covariâncias cruzadas posição–velocidade e yaw–taxa de yaw. Portanto, este contrato **não** deve ser interpretado como discretização de ruído branco contínuo.
 
-A contribuição longitudinal de posição é projetada na direção do heading no início do intervalo. É uma aproximação discreta coerente com o modelo de aceleração constante por intervalo; não substitui um modelo contínuo completo com integração de Van Loan.
+A contribuição longitudinal de posição é projetada na direção do heading no início do intervalo. A perturbação angular é aplicada aos estados yaw e yaw-rate; sua influência direta na posição dentro do mesmo intervalo não é modelada separadamente. Trata-se de uma aproximação discreta split-step explícita, coerente com o mapa B documentado, e não de uma discretização contínua completa por integração de Van Loan.
 
 ### Instalação rápida
 
