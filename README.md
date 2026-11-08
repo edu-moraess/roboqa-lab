@@ -43,7 +43,7 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 4.3 | Deterministic Quality Gate | **VALIDATED — PYTEST, RUFF, COMPILEALL** |
 | 4.4-A | ML Feature/Dataset Contracts | **VALIDATED — TARGETED + FULL SUITE, RUFF, COMPILEALL** |
 | 4.4-B | Temporal feature extraction from Fusion innovation telemetry | **VALIDATED — 42 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
-| 4.4-C | Statistical anomaly baseline + optional Isolation Forest (advisory only) | **IMPLEMENTED — MANUAL COLAB VALIDATION PENDING** |
+| 4.4-C | Statistical anomaly baseline + optional Isolation Forest (advisory only) | **VALIDATED — 57 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL; scikit-learn 1.6.1** |
 | 4.5-A | Fault-to-QA Integration Contracts | **VALIDATED — 52 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-B | Deterministic transport replay, watermark, deduplication and packet accounting | **VALIDATED — 19 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-C | Strict Measurement adapter from accepted transport envelopes | **VALIDATED — 10 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
@@ -111,20 +111,20 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Relatório imutável preserva métricas, findings, decisão, versão da política e hashes fornecidos.
 - Nenhum limiar universal é presumido; ML não participa da decisão.
 
-### ML Intelligence — Fases 4.4-A e 4.4-B (VALIDATED)
+### ML Intelligence — Fases 4.4-A, 4.4-B e 4.4-C (VALIDATED)
 
 - Contratos imutáveis para valores de features, amostras e datasets versionados.
 - Disponibilidade AVAILABLE/MISSING/INVALID explícita; sem imputação ou sentinelas numéricas.
 - Separação TRAIN/VALIDATION/TEST por execução, bloqueando vazamento de janelas do mesmo run.
 - Schema de features e unidades consistente entre amostras.
 - Anotações NORMAL/ANOMALOUS/UNKNOWN mantidas como metadados de avaliação, fora das features.
-- Sem treinamento, inferência, downloads ou alteração da autoridade do Quality Gate.
+- Sem alteração da autoridade do Quality Gate; ML permanece consultivo.
 - Validação manual no Colab: 30 testes direcionados; suíte completa sem falhas reportadas; Ruff limpo; compileall sem erros. A saída não expôs uma contagem agregada inequívoca da suíte.
 - Especificação: [Phase 4.4-A — ML Feature/Dataset Contracts](docs/phase-4-4a-ml-feature-dataset-contracts.md).
 
 
 
-### ML Anomaly Baselines — Fase 4.4-C (IMPLEMENTED; VALIDATION PENDING)
+### ML Anomaly Baselines — Fase 4.4-C (VALIDATED)
 
 - Baseline estatístico robusto com mediana/MAD, escala IQR/desvio padrão de fallback e score máximo de |z|.
 - Isolation Forest opcional via `scikit-learn`, carregado sob demanda; dependência isolada no extra `.[ml]`.
@@ -133,7 +133,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Rótulos de referência não são lidos pelo ajuste nem pelo scoring. Hashes vinculam dados de treino e configuração do modelo.
 - Saídas NORMAL/ANOMALOUS/UNSCORABLE são consultivas e não são decisões Quality Gate.
 - Especificação: [Phase 4.4-C — Advisory Anomaly Baselines](docs/phase-4-4c-advisory-anomaly-baselines.md).
-- Validação manual no Colab ainda pendente.
+- Validação manual no Colab: **57 testes direcionados passaram**, incluindo Isolation Forest com scikit-learn 1.6.1; suíte completa Pytest atingiu 100% com exit code 0; Ruff completo e compileall completos passaram. A saída da suíte completa não expôs contagem agregada inequívoca, portanto nenhum total foi inferido.
 
 ### Quality Contracts — Fase 4.0
 
