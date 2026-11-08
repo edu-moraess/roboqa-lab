@@ -6,7 +6,7 @@
 
 RoboQA Lab não é apenas uma demonstração de EKF. O objetivo é construir uma plataforma de engenharia para testar, observar e avaliar pipelines de percepção/estimação sensorial sob dados normais, falhas controladas e condições temporais adversas.
 
-> **Status do projeto:** implementação em andamento — base validada até a **Fase 4.1**; implementação da **Fase 4.2 em validação manual**. O produto completo ainda não está concluído.
+> **Status do projeto:** implementação em andamento — base validada até a **Fase 4.1**; Fase 4.2 implementada; testes direcionados e cobertura de 100% em `metrics.py`; validação global pendente. O produto completo ainda não está concluído.
 
 ## Visão da plataforma
 
@@ -39,7 +39,7 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 3.1–3.3-E | Fault Injection, temporal pipeline, campanhas e integração | **VALIDATED** |
 | 4.0 | Quality Contracts | **VALIDATED** |
 | 4.1 | Fusion Telemetry | **VALIDATED — 94% FUSION COVERAGE** |
-| 4.2 | Quality Metrics Engine | **IMPLEMENTED — COLAB VALIDATION PENDING** |
+| 4.2 | Quality Metrics Engine | **TARGETED COVERAGE 100% — FULL VALIDATION PENDING** |
 | 4.3 | Deterministic Quality Gate | PLANNED |
 | 4.4 | ML Intelligence | PLANNED |
 | 4.5 | Fault-to-QA Integration | PLANNED |
@@ -86,7 +86,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 
 **Nota semântica:** campanhas sobrepostas usam composição serial determinística; não representam execução paralela por threads ou workers assíncronos.
 
-### Quality Metrics Engine — Fase 4.2 (validação pendente)
+### Quality Metrics Engine — Fase 4.2 (cobertura direcionada 100%; validação global pendente)
 
 - RMSE com GroundTruth explícito, interpolação e tolerância de alinhamento.
 - NIS médio e norma da inovação por sensor.
@@ -122,7 +122,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Sem GitHub Actions como autoridade de validação.
 - Sem treinamento, downloads automáticos de datasets/pesos ou builds pesados antes da auditoria e dos gates pertinentes.
 
-A Phase 4.1 foi validada manualmente no Colab (suíte completa aprovada, Ruff limpo e 94% de cobertura no Fusion Engine). A Phase 4.2 está implementada em branch isolada e aguarda validação manual antes de ser considerada concluída.
+A Phase 4.1 foi validada manualmente no Colab (suíte completa aprovada, Ruff limpo e 94% de cobertura no Fusion Engine). Na Phase 4.2, os testes direcionados de `metrics.py` alcançaram 100% de cobertura de statements e branches. A validação global da Phase 4.2 (suíte completa, Ruff e compileall) ainda está pendente.
 
 ## Governança e integridade
 
