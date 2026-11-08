@@ -115,7 +115,7 @@ def test_optional_invalid_metric_is_warning():
 
 def test_decision_precedence_blocked_then_fail_then_warning():
     report = evaluate(
-        [metric("position_rmse", 2.0), metric("covariance_trace_mean", 2.0)],
+        [metric("position_rmse", 2.0)],
         [
             MetricRule("rmse", "position_rmse", MetricScope.RUN, maximum=1.0),
             MetricRule("cov", "covariance_trace_mean", MetricScope.RUN, required=False),
