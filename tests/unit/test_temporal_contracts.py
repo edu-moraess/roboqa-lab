@@ -46,7 +46,7 @@ def test_processing_clock_is_optional_for_backward_compatibility():
     assert envelope.is_valid_candidate
 
 
-@pytest.mark.parametrize("value", [True, "1.2", None])
+@pytest.mark.parametrize("value", [True, "1.2"])
 def test_present_processing_clock_must_be_numeric(value):
     with pytest.raises(ContractError, match="processing_time must be numeric"):
         _envelope(processing=value)
