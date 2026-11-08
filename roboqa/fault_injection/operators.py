@@ -1,0 +1,260 @@
+"""Deterministic, stateless operators for raw measurement envelopes (Phase 3.2)."""
+from __future__ import annotations
+
+import math
+from collections.abc import Mapping
+from typing import Protocol, Sequence, runtime_checkable
+
+import numpy as np
+
+from roboqa.fault_injection.contracts import ContractError, FaultScenario, FaultType
+from roboqa.fault_injection.envelopes import RawMeasurementEnvelope
+
+
+@runtime_checkable
+class EnvelopeFaultOperator(Protocol):
+    operator_id: str
+    version: str
+    fault_type: FaultType
+
+    def validate_parameters(self, parameters: Mapping[str, object]) -> None: ...
+    def apply(
+        self,
+        envelope: RawMeasurementEnvelope,
+        scenario: FaultScenario,
+        rng: np.random.Generator,
+    ) -> tuple[RawMeasurementEnvelope, ...]: ...
+
+
+def _finite_number(value: object, name: str, *, minimum: float | None = None) -> float:
+    if isinstance(value, bool):
+        raise ContractError(f"{name} must be a finite number")
+    try:
+        result = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ContractError(f"{name} must be a finite number") from exc
+    if not math.isfinite(result) or (minimum is not None and result < minimum):
+        raise ContractError(f"{name} must be finite and >= {minimum}")
+    return result
+
+
+def _index(value: object, size: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value < size:
+        raise ContractError(f"index must be an integer in [0, {size - 1}]")
+    return value
+
+
+def _with_payload(
+    envelope: RawMeasurementEnvelope, payload: Mapping[str, object]
+) -> RawMeasurementEnvelope:
+    return RawMeasurementEnvelope(
+        sensor_id=envelope.sensor_id,
+        acquisition_time=envelope.acquisition_time,
+        arrival_time=envelope.arrival_time,
+        sequence_number=envelope.sequence_number,
+        payload=payload,
+        source_id=envelope.source_id,
+    )
+
+
+class _BaseOperator:
+    operator_id = "base"
+    version = "1.0.0"
+    fault_type: FaultType
+
+    def validate_parameters(self, parameters: Mapping[str, object]) -> None:
+        if not isinstance(parameters, Mapping):
+            raise ContractError("operator parameters must be a mapping")
+
+    def describe(self) -> Mapping[str, object]:
+        return {"operator_id": self.operator_id, "version": self.version,
+                "fault_type": self.fault_type.value}
+
+
+class DropoutOperator(_BaseOperator):
+    operator_id = "dropout"
+    fault_type = FaultType.SENSOR_DROPOUT
+
+    def validate_parameters(self, parameters: Mapping[str, object]) -> None:
+        super().validate_parameters(parameters)
+        if parameters:
+            raise ContractError("dropout operator accepts no parameters")
+
+    def apply(self, envelope, scenario, rng):
+        del scenario, rng
+        return ()
+
+
+class PacketLossOperator(DropoutOperator):
+    operator_id = "packet-loss"
+    fault_type = FaultType.PACKET_LOSS
+
+
+class DelayOperator(_BaseOperator):
+    operator_id = "delay"
+    fault_type = FaultType.DELAY
+
+    def validate_parameters(self, parameters):
+        super().validate_parameters(parameters)
+        _finite_number(parameters.get("delay_s"), "delay_s", minimum=0.0)
+
+    def apply(self, envelope, scenario, rng):
+        del rng
+        delay = _finite_number(scenario.parameters["delay_s"], "delay_s", minimum=0.0)
+        return (RawMeasurementEnvelope(
+            sensor_id=envelope.sensor_id,
+            acquisition_time=envelope.acquisition_time,
+            arrival_time=envelope.arrival_time + delay,
+            sequence_number=envelope.sequence_number,
+            payload=envelope.payload,
+            source_id=envelope.source_id,
+        ),)
+
+
+class ArrivalShiftOperator(_BaseOperator):
+    """Shift transport arrival time; signed shifts can induce out-of-order arrival."""
+    operator_id = "arrival-shift"
+    fault_type = FaultType.OUT_OF_ORDER
+
+    def validate_parameters(self, parameters):
+        super().validate_parameters(parameters)
+        if "shift_s" not in parameters:
+            raise ContractError("shift_s is required")
+        _finite_number(parameters["shift_s"], "shift_s")
+
+    def apply(self, envelope, scenario, rng):
+        del rng
+        shift = _finite_number(scenario.parameters["shift_s"], "shift_s")
+        return (RawMeasurementEnvelope(
+            sensor_id=envelope.sensor_id,
+            acquisition_time=envelope.acquisition_time,
+            arrival_time=envelope.arrival_time + shift,
+            sequence_number=envelope.sequence_number,
+            payload=envelope.payload,
+            source_id=envelope.source_id,
+        ),)
+
+
+def _z_payload(envelope: RawMeasurementEnvelope) -> tuple[dict[str, object], list[float]]:
+    if not isinstance(envelope.payload, Mapping) or "z" not in envelope.payload:
+        raise ContractError("operator requires a mapping payload with a 'z' vector")
+    z = envelope.payload["z"]
+    if not isinstance(z, (tuple, list)) or not z:
+        raise ContractError("payload['z'] must be a non-empty vector")
+    try:
+        values = [float(value) for value in z]
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ContractError("payload['z'] must contain numeric values") from exc
+    return dict(envelope.payload), values
+
+
+class BiasOperator(_BaseOperator):
+    operator_id = "bias"
+    fault_type = FaultType.BIAS
+
+    def validate_parameters(self, parameters):
+        super().validate_parameters(parameters)
+        offset = parameters.get("offset")
+        if not isinstance(offset, (tuple, list)) or not offset:
+            raise ContractError("offset must be a non-empty numeric vector")
+        for value in offset:
+            _finite_number(value, "offset item")
+
+    def apply(self, envelope, scenario, rng):
+        del rng
+        payload, z = _z_payload(envelope)
+        offset = scenario.parameters["offset"]
+        if len(offset) != len(z):
+            raise ContractError("offset dimension must match payload['z']")
+        payload["z"] = [value + float(delta) for value, delta in zip(z, offset)]
+        return (_with_payload(envelope, payload),)
+
+
+class OutlierOperator(_BaseOperator):
+    operator_id = "outlier"
+    fault_type = FaultType.OUTLIER
+
+    def validate_parameters(self, parameters):
+        super().validate_parameters(parameters)
+        _finite_number(parameters.get("sigma"), "sigma", minimum=0.0)
+        if float(parameters["sigma"]) == 0.0:
+            raise ContractError("sigma must be > 0")
+        if "index" in parameters and (
+            isinstance(parameters["index"], bool) or not isinstance(parameters["index"], int)
+            or parameters["index"] < 0
+        ):
+            raise ContractError("index must be a non-negative integer")
+
+    def apply(self, envelope, scenario, rng):
+        payload, z = _z_payload(envelope)
+        index = _index(scenario.parameters.get("index", 0), len(z))
+        sigma = _finite_number(scenario.parameters["sigma"], "sigma", minimum=0.0)
+        if sigma == 0.0:
+            raise ContractError("sigma must be > 0")
+        z[index] += float(rng.normal(0.0, sigma))
+        payload["z"] = z
+        return (_with_payload(envelope, payload),)
+
+
+class InvalidPayloadOperator(_BaseOperator):
+    operator_id = "invalid-payload"
+    fault_type = FaultType.INVALID_PAYLOAD
+
+    def validate_parameters(self, parameters):
+        super().validate_parameters(parameters)
+        kind = parameters.get("kind", "nan")
+        if kind not in ("nan", "positive_inf", "negative_inf"):
+            raise ContractError("kind must be nan, positive_inf, or negative_inf")
+        if "index" in parameters and (
+            isinstance(parameters["index"], bool) or not isinstance(parameters["index"], int)
+            or parameters["index"] < 0
+        ):
+            raise ContractError("index must be a non-negative integer")
+
+    def apply(self, envelope, scenario, rng):
+        del rng
+        payload, z = _z_payload(envelope)
+        index = _index(scenario.parameters.get("index", 0), len(z))
+        kind = scenario.parameters.get("kind", "nan")
+        z[index] = {"nan": float("nan"), "positive_inf": float("inf"),
+                    "negative_inf": float("-inf")}[str(kind)]
+        payload["z"] = z
+        return (_with_payload(envelope, payload),)
+
+
+class DuplicateOperator(_BaseOperator):
+    operator_id = "duplicate"
+    fault_type = FaultType.DUPLICATE
+
+    def validate_parameters(self, parameters):
+        super().validate_parameters(parameters)
+        delay = parameters.get("duplicate_delay_s", 0.0)
+        _finite_number(delay, "duplicate_delay_s", minimum=0.0)
+
+    def apply(self, envelope, scenario, rng):
+        del rng
+        delay = _finite_number(
+            scenario.parameters.get("duplicate_delay_s", 0.0),
+            "duplicate_delay_s", minimum=0.0,
+        )
+        duplicate = RawMeasurementEnvelope(
+            sensor_id=envelope.sensor_id,
+            acquisition_time=envelope.acquisition_time,
+            arrival_time=envelope.arrival_time + delay,
+            sequence_number=envelope.sequence_number,
+            payload=envelope.payload,
+            source_id=envelope.source_id,
+        )
+        return (envelope, duplicate)
+
+
+DEFAULT_OPERATORS: tuple[EnvelopeFaultOperator, ...] = (
+    DropoutOperator(),
+    PacketLossOperator(),
+    DelayOperator(),
+    ArrivalShiftOperator(),
+    BiasOperator(),
+    OutlierOperator(),
+    InvalidPayloadOperator(),
+    DuplicateOperator(),
+)
