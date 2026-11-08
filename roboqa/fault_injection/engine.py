@@ -9,16 +9,29 @@ from typing import Mapping, Sequence
 import numpy as np
 
 from roboqa.fault_injection.contracts import (
-    ContractError, FaultEvent, FaultResult, FaultScenario, FaultStatus, FaultType,
+    ContractError,
+    FaultEvent,
+    FaultResult,
+    FaultScenario,
+    FaultStatus,
+    FaultType,
 )
 from roboqa.fault_injection.envelopes import RawMeasurementEnvelope
 from roboqa.fault_injection.operators import (
-    ArrivalShiftOperator, BiasOperator, DelayOperator, DropoutOperator,
-    DuplicateOperator, EnvelopeFaultOperator, InvalidPayloadOperator,
-    OutlierOperator, PacketLossOperator,
+    ArrivalShiftOperator,
+    BiasOperator,
+    DelayOperator,
+    DropoutOperator,
+    DuplicateOperator,
+    EnvelopeFaultOperator,
+    InvalidPayloadOperator,
+    OutlierOperator,
+    PacketLossOperator,
 )
 from roboqa.fault_injection.provenance import (
-    FaultProvenance, build_configuration_hash, sha256_digest,
+    FaultProvenance,
+    build_configuration_hash,
+    sha256_digest,
 )
 
 
