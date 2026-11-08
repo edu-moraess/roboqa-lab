@@ -155,3 +155,61 @@ def test_P0_nonsymmetric():
 def test_invalid_process_noise_parameters_rejected(sigma_a, sigma_alpha):
     with pytest.raises(SchemaError):
         EKF(np.zeros(5), np.eye(5), sigma_a=sigma_a, sigma_alpha=sigma_alpha)
+
+def test_constructor_rejects_nonfinite_state_and_covariance():
+    x0 = np.zeros(5)
+    x0[0] = np.nan
+    with pytest.raises(SchemaError, match="x0 contém"):
+        EKF(x0, np.eye(5))
+
+    P0 = np.eye(5)
+    P0[0, 0] = np.inf
+    with pytest.raises(SchemaError, match="P0 contém"):
+        EKF(np.zeros(5), P0)
+
+
+def test_constructor_rejects_indefinite_initial_covariance():
+    P0 = np.eye(5)
+    P0[0, 0] = -0.1
+    with pytest.raises(SchemaError, match="não é PSD"):
+        EKF(np.zeros(5), P0)
+
+
+def test_set_time_rejects_nonfinite_timestamp():
+    ekf = EKF(np.zeros(5), np.eye(5))
+    with pytest.raises(SchemaError, match="timestamp não-finito"):
+        ekf.set_time(np.nan)
+    assert ekf.t is None
+
+
+@pytest.mark.parametrize("t_next", [np.nan, np.inf, -np.inf])
+def test_predict_rejects_nonfinite_timestamp_without_mutation(t_next):
+    ekf = _ekf()
+    before = _snapshot(ekf)
+    with pytest.raises(SchemaError, match="t_next não-finito"):
+        ekf.predict(t_next)
+    np.testing.assert_array_equal(ekf.x, before[0])
+    np.testing.assert_array_equal(ekf.P, before[1])
+    assert ekf.t == before[2]
+
+
+def test_predict_same_timestamp_is_noop():
+    ekf = _ekf()
+    before = _snapshot(ekf)
+    ekf.predict(0.0)
+    np.testing.assert_array_equal(ekf.x, before[0])
+    np.testing.assert_array_equal(ekf.P, before[1])
+    assert ekf.t == before[2]
+
+
+def test_update_singular_innovation_is_atomic():
+    ekf = EKF(np.zeros(5), np.zeros((5, 5)))
+    ekf.set_time(0.0)
+    before = _snapshot(ekf)
+    measurement = Measurement(t=0.0, sensor="gps", z=np.ones(2), R=np.zeros((2, 2)))
+    with pytest.raises(EKFNumericalError, match="singular/mal condicionada"):
+        ekf.update(measurement)
+    np.testing.assert_array_equal(ekf.x, before[0])
+    np.testing.assert_array_equal(ekf.P, before[1])
+    assert ekf.t == before[2]
+
