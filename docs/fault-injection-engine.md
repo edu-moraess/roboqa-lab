@@ -36,6 +36,41 @@ unchanged and counted as skipped because they cannot be safely selected or
 represented in normalized `FaultEvent` timestamps. Non-finite payload values
 are preserved and can be hashed using an explicit tagged representation.
 
+## Three-clock temporal contract (Phase 3.3-A)
+
+RawMeasurementEnvelope carries three distinct timestamps, expressed in seconds
+on the same simulation-time coordinate:
+
+- acquisition_time: when the sensor acquired the measurement.
+- arrival_time: when the transport boundary received the envelope.
+- processing_time: when downstream processing handled the envelope; optional
+  until that processing stage has occurred.
+
+The optional processing_time field is appended after the existing constructor
+fields, preserving positional and keyword compatibility for Phase 3.1/3.2
+callers. Existing operators preserve it unchanged. Delay and arrival-shift
+operators modify only arrival_time; they do not fabricate a processing time.
+
+When the required timestamps are finite, the envelope exposes:
+
+- transport_latency_s = arrival_time - acquisition_time
+- processing_wait_s = processing_time - arrival_time
+- end_to_end_latency_s = processing_time - acquisition_time
+
+Metrics that require a missing or non-finite timestamp return None. Negative
+deltas are retained as evidence, not silently clamped: arrival_precedes_acquisition
+and processing_precedes_arrival are exposed through temporal_diagnostics.
+This is intentional at the raw boundary, where clock anomalies must remain
+inspectable. temporal_order_valid currently checks that a present processing
+timestamp does not precede arrival; it does not reject the envelope.
+
+A non-finite processing timestamp is preserved for diagnostics and causes
+timestamps_finite / is_valid_candidate to report false. The execution engine
+includes processing time in canonical envelope hashes and copies it into
+FaultEvent.processing_time, so provenance and event records cover all three
+clocks. This phase defines metadata and diagnostics only: it does not add a
+scheduler, buffering policy, processing simulator, or clock-domain conversion.
+
 ## Campaign orchestration
 
 `FaultInjectionEngine.run_campaign(envelopes, scenarios)` applies a non-empty
