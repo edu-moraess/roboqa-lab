@@ -67,11 +67,13 @@ class RawMeasurementEnvelope:
 
     @property
     def timestamps_finite(self) -> bool:
-        """Whether every timestamp that is present is finite."""
-        values = (self.acquisition_time, self.arrival_time)
-        if self.processing_time is not None:
-            values += (self.processing_time,)
-        return all(math.isfinite(value) for value in values)
+        """Whether acquisition and arrival timestamps are finite (Phase 3.2 semantics)."""
+        return math.isfinite(self.acquisition_time) and math.isfinite(self.arrival_time)
+
+    @property
+    def processing_timestamp_finite(self) -> bool:
+        """Whether processing_time is absent or finite."""
+        return self.processing_time is None or math.isfinite(self.processing_time)
 
     @property
     def transport_latency_s(self) -> float | None:
@@ -115,7 +117,10 @@ class RawMeasurementEnvelope:
     @property
     def temporal_order_valid(self) -> bool:
         """True when no present processing timestamp precedes arrival."""
-        return "processing_precedes_arrival" not in self.temporal_diagnostics
+        return (
+            self.processing_timestamp_finite
+            and "processing_precedes_arrival" not in self.temporal_diagnostics
+        )
 
     @property
     def payload_finite(self) -> bool:
@@ -131,4 +136,4 @@ class RawMeasurementEnvelope:
 
     @property
     def is_valid_candidate(self) -> bool:
-        return self.timestamps_finite and self.payload_finite
+        return self.timestamps_finite and self.processing_timestamp_finite and self.payload_finite
