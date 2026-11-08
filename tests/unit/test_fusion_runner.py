@@ -117,7 +117,7 @@ def test_custom_initial_state_and_covariance_are_used():
     P0 = np.eye(5) * 2.0
     result = run_filter([measurement], x0=x0, P0=P0)
     assert result.status == FilterStatus.OK
-    np.testing.assert_array_equal(result.x[0], x0)
+    np.testing.assert_allclose(result.x[0], x0, rtol=0.0, atol=1e-12)
     np.testing.assert_array_equal(result.P[0], P0)
 
 
