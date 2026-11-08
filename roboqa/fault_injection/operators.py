@@ -91,22 +91,93 @@ class DropoutOperator(_BaseOperator):
         return ()
 
 
-class PacketLossOperator(DropoutOperator):
+class PacketLossOperator(_BaseOperator):
+    """Independent Bernoulli packet loss using the scenario-local RNG."""
+
     operator_id = "packet-loss"
     fault_type = FaultType.PACKET_LOSS
 
+    def validate_parameters(self, parameters):
+        super().validate_parameters(parameters)
+        probability = _finite_number(
+            parameters.get("loss_probability"), "loss_probability", minimum=0.0
+        )
+        if probability > 1.0:
+            raise ContractError("loss_probability must be in [0, 1]")
+
+    def apply(self, envelope, scenario, rng):
+        probability = float(scenario.parameters["loss_probability"])
+        if rng.random() < probability:
+            return ()
+        return (envelope,)
+
+
+class BurstLossOperator(_BaseOperator):
+    """Remove packets whose acquisition times fall in declared burst intervals."""
+
+    operator_id = "burst-loss"
+    fault_type = FaultType.INTERMITTENT_OUTAGE
+
+    def validate_parameters(self, parameters):
+        super().validate_parameters(parameters)
+        intervals = parameters.get("burst_intervals_s")
+        if not isinstance(intervals, (tuple, list)) or not intervals:
+            raise ContractError("burst_intervals_s must be a non-empty list of [start, end] pairs")
+        previous_end = -math.inf
+        for interval in intervals:
+            if not isinstance(interval, (tuple, list)) or len(interval) != 2:
+                raise ContractError("each burst interval must contain [start, end]")
+            start = _finite_number(interval[0], "burst start")
+            end = _finite_number(interval[1], "burst end")
+            if start >= end:
+                raise ContractError("each burst interval must satisfy start < end")
+            if start < previous_end:
+                raise ContractError("burst intervals must be sorted and non-overlapping")
+            previous_end = end
+
+    def is_applicable(self, envelope, scenario):
+        return any(
+            start <= envelope.acquisition_time < end
+            for start, end in scenario.parameters["burst_intervals_s"]
+        )
+
+    def apply(self, envelope, scenario, rng):
+        del envelope, scenario, rng
+        return ()
+
 
 class DelayOperator(_BaseOperator):
+    """Apply constant, uniform, or exponential non-negative transport delay."""
+
     operator_id = "delay"
     fault_type = FaultType.DELAY
 
     def validate_parameters(self, parameters):
         super().validate_parameters(parameters)
-        _finite_number(parameters.get("delay_s"), "delay_s", minimum=0.0)
+        distribution = parameters.get("distribution", "constant")
+        if distribution == "constant":
+            _finite_number(parameters.get("delay_s"), "delay_s", minimum=0.0)
+        elif distribution == "uniform":
+            minimum = _finite_number(parameters.get("min_delay_s"), "min_delay_s", minimum=0.0)
+            maximum = _finite_number(parameters.get("max_delay_s"), "max_delay_s", minimum=0.0)
+            if minimum >= maximum:
+                raise ContractError("uniform delay requires min_delay_s < max_delay_s")
+        elif distribution == "exponential":
+            mean = _finite_number(parameters.get("mean_delay_s"), "mean_delay_s", minimum=0.0)
+            if mean <= 0.0:
+                raise ContractError("mean_delay_s must be > 0 for exponential delay")
+        else:
+            raise ContractError("distribution must be constant, uniform, or exponential")
 
     def apply(self, envelope, scenario, rng):
-        del rng
-        delay = _finite_number(scenario.parameters["delay_s"], "delay_s", minimum=0.0)
+        parameters = scenario.parameters
+        distribution = parameters.get("distribution", "constant")
+        if distribution == "constant":
+            delay = float(parameters["delay_s"])
+        elif distribution == "uniform":
+            delay = float(rng.uniform(parameters["min_delay_s"], parameters["max_delay_s"]))
+        else:
+            delay = float(rng.exponential(parameters["mean_delay_s"]))
         return (RawMeasurementEnvelope(
             sensor_id=envelope.sensor_id,
             acquisition_time=envelope.acquisition_time,
