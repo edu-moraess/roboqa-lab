@@ -55,6 +55,7 @@ def _with_payload(
         sequence_number=envelope.sequence_number,
         payload=payload,
         source_id=envelope.source_id,
+        processing_time=envelope.processing_time,
     )
 
 
@@ -150,6 +151,7 @@ class ArrivalShiftOperator(_BaseOperator):
             sequence_number=envelope.sequence_number,
             payload=envelope.payload,
             source_id=envelope.source_id,
+            processing_time=envelope.processing_time,
         ),)
 
 
@@ -262,6 +264,7 @@ class DuplicateOperator(_BaseOperator):
             sequence_number=envelope.sequence_number,
             payload=envelope.payload,
             source_id=envelope.source_id,
+            processing_time=envelope.processing_time,
         )
         return (envelope, duplicate)
 
