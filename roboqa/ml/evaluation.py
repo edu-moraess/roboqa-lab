@@ -219,7 +219,10 @@ class AnomalyEvaluationReport:
     def __post_init__(self) -> None:
         object.__setattr__(self, "dataset_id", _non_empty(self.dataset_id, "dataset_id"))
         object.__setattr__(self, "method", _non_empty(self.method, "method"))
-        if self.evaluation_split not in (DatasetSplit.VALIDATION, DatasetSplit.TEST):
+        if not isinstance(self.evaluation_split, DatasetSplit) or self.evaluation_split not in (
+            DatasetSplit.VALIDATION,
+            DatasetSplit.TEST,
+        ):
             raise AnomalyEvaluationError(
                 "evaluation_split must be VALIDATION or TEST; TRAIN is prohibited"
             )
