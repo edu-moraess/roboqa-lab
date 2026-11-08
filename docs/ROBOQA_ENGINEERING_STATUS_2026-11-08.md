@@ -442,3 +442,42 @@ Sync branch `feat/measurement-adapter-phase-4-5c`, then run the targeted adapter
 ### Next engineering step
 
 Phase 4.5-D should specify and test the Fusion scheduling boundary explicitly: whether accepted measurements execute in acquisition/event-time order or arrival order, how late/duplicate/dropped decisions influence execution and telemetry, and how replay evidence propagates into Quality Metrics and the deterministic Quality Gate. Preserve the Quality Gate as the sole decision authority.
+
+
+---
+
+## 20. Engineering addendum — Phase 4.5-D1 deterministic Fusion scheduling validation (2026-11-08)
+
+### Phase 4.5-D1 — VALIDATION PASS
+
+- Branch: `feat/fusion-scheduling-phase-4-5d1`.
+- Validated code checkpoint: `43d0bd73f43e47b6dc0d3e0cc0f545e0127ba929`.
+- Base: Phase 4.5-C checkpoint `b5ba536425c3b66070f0340802b99745f3cdb053`.
+- PR #17: https://github.com/edu-moraess/roboqa-lab/pull/17 — open, Draft, and unmerged; targets `feat/measurement-adapter-phase-4-5c`, not `main`.
+- Manual Colab targeted tests: **15 passed**.
+- Full `python -m pytest -q`: reached 100%, exit code **0**, no failures reported. The captured output did not expose an unambiguous aggregate test count; no total is inferred.
+- Full `ruff check roboqa tests`: **All checks passed!**
+- Full `python -m compileall -q roboqa tests`: exit code **0**.
+- Result: **FULL VALIDATION PASS** for the offline deterministic Fusion scheduling boundary and repository compatibility.
+
+### Implemented behavior
+
+- `FusionSchedule` is immutable and retains the complete `TransportReplaySummary`.
+- `build_fusion_schedule` requires an exact one-to-one match between replay-accepted envelope identities and adapter records.
+- Sensor identity, acquisition time, arrival time, processing time, and normalized payload are checked before scheduling.
+- Event-time order is deterministic: acquisition timestamp, normalized sensor ID, source ID, sequence number.
+- Schedule SHA-256 includes replay provenance, three clocks, normalized payload, and explicit caller-supplied covariance R.
+- Replay dispositions other than ACCEPTED remain in the attached replay summary and never enter the Fusion schedule.
+- Empty accepted batches produce empty schedules without fabricating measurements.
+
+### Explicit limitations
+
+- D1 is an offline batch scheduling boundary. It does not implement a live queue, wall-clock buffering, watermark finalization, fixed-lag rewind/reprocessing, or arrival-order EKF execution.
+- EKF and `run_filter` were not modified.
+- Quality Metrics and Quality Gate were not modified in D1. Their integration is deferred to D3.
+- No model training/inference, dataset downloads, Streamlit, CI/GitHub Actions, merge, or changes to `main` were performed.
+
+### Next engineering checkpoints
+
+- **D2 — Fusion execution record:** execute the immutable schedule through the existing Fusion runner and associate source identities with telemetry or explicit execution outcomes.
+- **D3 — QA evidence propagation:** propagate replay and execution evidence into Quality Metrics and deterministic Quality Gate, preserving the Gate as the sole decision authority.
