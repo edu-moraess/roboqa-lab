@@ -394,3 +394,26 @@ Run targeted replay tests, targeted Ruff and compileall, then full pytest, full 
 ### Next engineering step
 
 Proceed to Phase 4.5-C/D with a separately specified adapter and Fusion scheduling boundary. Define how accepted envelopes map to normalized `Measurement`, whether event-time or arrival-time controls execution, and how late/duplicate/dropped decisions are carried into telemetry and QA. Add tests that prove the effect on Fusion telemetry, metrics, and deterministic Quality Gate before extending the product UI. Keep the Quality Gate as the sole decision authority.
+
+---
+
+## 18. Engineering addendum — Phase 4.5-C Measurement adapter (2026-11-08)
+
+### Implementation checkpoint — manual validation pending
+
+- Branch: `feat/measurement-adapter-phase-4-5c`.
+- Base: validated Phase 4.5-B checkpoint `7fd0fd808b3732392775d0dc28e52127ec9a8924`.
+- PR #16: https://github.com/edu-moraess/roboqa-lab/pull/16 — open, Draft, unmerged; targets `feat/temporal-replay-phase-4-5b`, not `main`.
+- Added `roboqa.integration.measurement_adapter` with `AdaptedMeasurement`, `MeasurementAdapterError`, and `adapt_accepted_envelopes`.
+- Only replay-accepted envelopes are converted. Duplicate, late, invalid, and dropped decisions remain in the replay summary.
+- Payload maps to Measurement z; acquisition_time maps to Measurement.t. Arrival and processing clocks and source identity are retained alongside each normalized measurement.
+- Covariance R must be supplied explicitly by the caller per normalized sensor ID. No noise model is inferred or defaulted.
+- Existing Measurement schema and Fusion sensor registry enforce finite values, dimensions, covariance validity, and supported sensor types.
+- Added targeted unit tests and adapter specification; README roadmap updated.
+- Important limitation: the adapter preserves replay order but does not change Fusion execution order. Existing `run_filter` sorts by `(Measurement.t, sensor)`; arrival-order Fusion scheduling is a separate Phase 4.5-D design decision.
+- **Validation status: PENDING MANUAL COLAB.** No pytest, Ruff, compileall, coverage, or runtime PASS is claimed yet.
+- No changes to `main`, no merge, no CI/GitHub Actions, no model training/inference, and no Streamlit changes.
+
+### Manual Colab gate
+
+Sync branch `feat/measurement-adapter-phase-4-5c`, then run the targeted adapter tests, targeted Ruff/compileall, full pytest, full Ruff, and full compileall. Keep PR #16 Draft until outputs are reviewed.
