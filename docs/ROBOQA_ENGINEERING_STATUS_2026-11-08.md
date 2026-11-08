@@ -181,3 +181,16 @@ This addendum supersedes the earlier "next step — Phase 4.1" wording in the hi
 ### Next step
 
 Run the documented Phase 4.2 Colab validation. Fix any evidence-backed failures before marking the phase validated. Phase 4.3 Quality Gate remains out of scope until Phase 4.2 passes.
+
+---
+
+## 10. Engineering addendum — Phase 4.2 targeted test evidence (2026-11-08)
+
+- Branch: `feat/quality-metrics-phase-4-2`
+- PR: https://github.com/edu-moraess/roboqa-lab/pull/11
+- Corrected the GPS mean innovation norm test expectation from 4.0 to 3.5. The fixture contains innovation vectors `[3, 4]` and `[0, 2]`, whose Euclidean norms are 5 and 2; their arithmetic mean is 3.5.
+- Added contract tests for invalid FilterResult types/shapes, non-finite and non-monotonic evidence, invalid GroundTruth, absent RMSE overlap/alignment, invalid tolerance and envelope inputs, expected-count validation, asymmetric covariance, eigendecomposition failure, empty results, and incomplete/non-finite clock evidence.
+- Manual Colab targeted coverage report for `roboqa/qa/metrics.py`: **142 statements, 0 missed; 76 branches, 0 partial; 100% coverage**.
+- The targeted test run associated with this coverage report completed successfully.
+- **Overall Phase 4.2 validation remains PENDING** until the complete pytest suite, Ruff, and compileall outputs are reviewed. No claim is made here that those checks passed.
+- PR #11 remains Draft and unmerged. Phase 4.3 remains gated on complete Phase 4.2 validation.
