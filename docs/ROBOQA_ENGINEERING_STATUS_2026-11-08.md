@@ -224,3 +224,32 @@ This addendum supersedes the earlier Phase 4.2 pending-validation statements in 
 - Added unit tests and policy/API documentation.
 - Validation: **PENDING MANUAL COLAB**. Do not mark this phase complete until compileall, Ruff, targeted tests, and the full suite are reviewed.
 - PR #12 remains Draft; no PR was merged and `main` was not changed.
+
+
+
+---
+
+## 12. Engineering addendum — Phase 4.3 validation and Phase 4.4-A implementation (2026-11-08)
+
+### Phase 4.3 — Deterministic Quality Gate: VALIDATION PASS
+
+- Validated branch: `feat/deterministic-quality-gate-phase-4-3`.
+- Validated HEAD used for the Phase 4.4-A branch: `1390ddd45c0da9fc4a0dfc4fd1d897c783d46105`.
+- Manual Colab evidence supplied: complete `python -m pytest -q` reached 100% with no reported failures; `ruff check roboqa tests --output-format=full` reported `All checks passed!`; `python -m compileall -q roboqa tests` completed without errors.
+- Exact total test count was not exposed in the captured output and is intentionally not inferred.
+- Result: **VALIDATION PASS**. PR #12 remains open, Draft, and unmerged; no changes were made to `main`.
+
+### Phase 4.4-A — ML Feature and Dataset Contracts: IMPLEMENTED, VALIDATION PENDING
+
+- Branch: `feat/ml-intelligence-contracts-phase-4-4a`.
+- Base: validated Phase 4.3 HEAD `1390ddd45c0da9fc4a0dfc4fd1d897c783d46105`.
+- Added `roboqa.ml` contracts: `FeatureValue`, `FeatureSample`, `FeatureDataset`, `FeatureAvailability`, `DatasetSplit`, and evaluation-only `AnomalyReference`.
+- Feature availability is explicit (AVAILABLE/MISSING/INVALID); missing/invalid values cannot carry numeric sentinels. No imputation or silent dropping occurs.
+- Dataset rows require a consistent feature-name schema and units. Missing feature slots must be represented explicitly.
+- All windows belonging to one `run_id` must remain in one split, preventing run-level leakage across TRAIN/VALIDATION/TEST.
+- Dataset identity, UTC creation timestamp, source/configuration SHA-256, unique sample IDs, and finite ordered windows are validated.
+- Optional NORMAL/ANOMALOUS/UNKNOWN reference labels are evaluation metadata, not feature values or model inputs.
+- Added unit tests and Phase 4.4-A contract documentation.
+- No feature extraction, preprocessing, training, inference, model dependency, dataset download, or Quality Gate integration was added.
+- Validation: **PENDING MANUAL COLAB**. Do not claim the phase validated until targeted tests, full pytest, Ruff, and compileall outputs are reviewed.
+- PR #13 is intended to remain Draft and target the Phase 4.3 branch. No merge is authorized or performed.
