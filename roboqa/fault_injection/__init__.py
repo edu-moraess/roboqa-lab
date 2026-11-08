@@ -27,11 +27,6 @@ from roboqa.fault_injection.operators import (
     OutlierOperator,
     PacketLossOperator,
 )
-from roboqa.fault_injection.scheduler import (
-    FaultSchedule,
-    ScheduledFaultOccurrence,
-    TemporalScheduler,
-)
 from roboqa.fault_injection.provenance import (
     FaultProvenance,
     build_configuration_hash,
@@ -39,6 +34,12 @@ from roboqa.fault_injection.provenance import (
     sha256_digest,
     validate_sha256,
     validate_utc_timestamp,
+)
+
+from roboqa.fault_injection.scheduler import (
+    FaultSchedule,
+    ScheduledFaultOccurrence,
+    TemporalScheduler,
 )
 
 __all__ = [
