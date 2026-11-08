@@ -1,7 +1,6 @@
 """
 Extended Kalman Filter with CTRV motion model.
-Fase 2 — Fusion Engine
-ARQTECH LABS
+Fase 2 — Fusion Engine; Phase 4.1 — Fusion Telemetry.
 
 Uses Joseph-form covariance update. predict/update validate all candidate
 values before committing state, covariance, or time.
@@ -20,6 +19,7 @@ from roboqa.fusion.models.ctrv import (
     normalize_angle,
     process_noise_Q,
 )
+from roboqa.fusion.result import InnovationTelemetry
 from roboqa.fusion.sensors import get_sensor_model, validate_measurement_for_fusion
 
 
@@ -129,8 +129,8 @@ class EKF:
         self.P = P_new
         self._t = value
 
-    def update(self, measurement: Measurement) -> None:
-        """Apply a measurement at the current filter timestamp (atomic)."""
+    def update(self, measurement: Measurement) -> InnovationTelemetry:
+        """Apply an update atomically and return immutable innovation evidence."""
         validate_measurement_for_fusion(measurement)
         if self._t is None:
             raise SchemaError("EKF sem tempo inicial; chame set_time() antes de update.")
@@ -140,7 +140,7 @@ class EKF:
                 f"do filtro ({self._t:.12g}); execute predict até o evento primeiro."
             )
 
-        h_fn, H_fn, _ = get_sensor_model(measurement.sensor)
+        h_fn, H_fn, measurement_dof = get_sensor_model(measurement.sensor)
         z = np.array(measurement.z, dtype=np.float64, copy=True)
         R = np.array(measurement.R, dtype=np.float64, copy=True)
         x_pred = self.x.copy()
@@ -156,10 +156,18 @@ class EKF:
         try:
             PHt = P_pred @ H.T
             K = np.linalg.solve(S, PHt.T).T
+            # NIS = y.T @ solve(S, y); never form an explicit inverse.
+            solved_innovation = np.linalg.solve(S, y)
+            nis = float(y @ solved_innovation)
         except np.linalg.LinAlgError as exc:
             raise EKFNumericalError(
                 f"Matriz de inovação singular/mal condicionada (sensor={measurement.sensor}): {exc}"
             ) from exc
+        if not np.isfinite(nis):
+            raise EKFNumericalError("NIS não-finito.")
+        if nis < -1e-10:
+            raise EKFNumericalError(f"NIS negativo fora da tolerância numérica: {nis:.3e}")
+        nis = max(0.0, nis)
 
         x_new = x_pred + K @ y
         x_new[2] = float(normalize_angle(x_new[2]))
@@ -173,5 +181,14 @@ class EKF:
         if not np.all(np.isfinite(x_new)):
             raise EKFNumericalError("Estado não-finito após update.")
 
+        telemetry = InnovationTelemetry(
+            timestamp=float(measurement.t),
+            sensor_id=measurement.sensor,
+            measurement_dof=measurement_dof,
+            innovation=y,
+            innovation_covariance=S,
+            nis=nis,
+        )
         self.x = x_new
         self.P = P_new
+        return telemetry
