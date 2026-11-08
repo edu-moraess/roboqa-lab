@@ -28,12 +28,12 @@ def decision(disposition=DeliveryDisposition.ACCEPTED, sequence=1, **kwargs):
         arrival_time=1.01,
         processing_time=1.02,
     )
-    defaults.update(kwargs)
-    if disposition is not DeliveryDisposition.ACCEPTED and "reason" not in defaults:
-        defaults["reason"] = "test disposition"
     if disposition is DeliveryDisposition.DROPPED:
         defaults["arrival_time"] = None
         defaults["processing_time"] = None
+    if disposition is not DeliveryDisposition.ACCEPTED and "reason" not in kwargs:
+        defaults["reason"] = "test disposition"
+    defaults.update(kwargs)
     return DeliveryDecision(**defaults)
 
 
@@ -118,9 +118,10 @@ def test_nonaccepted_requires_reason(disposition):
         )
 
 
-def test_dropped_cannot_claim_arrival_or_processing():
+@pytest.mark.parametrize("field", ["arrival_time", "processing_time"])
+def test_dropped_cannot_claim_arrival_or_processing(field):
     with pytest.raises(IntegrationContractError):
-        decision(DeliveryDisposition.DROPPED, arrival_time=1.01)
+        decision(DeliveryDisposition.DROPPED, **{field: 1.01})
 
 
 def test_nonaccepted_can_preserve_nonfinite_raw_timestamps():
