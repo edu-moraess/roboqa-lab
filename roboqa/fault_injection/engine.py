@@ -20,6 +20,7 @@ from roboqa.fault_injection.envelopes import RawMeasurementEnvelope
 from roboqa.fault_injection.operators import (
     ArrivalShiftOperator,
     BiasOperator,
+    BurstLossOperator,
     DelayOperator,
     DropoutOperator,
     DuplicateOperator,
@@ -92,7 +93,7 @@ class FaultInjectionEngine:
 
     def __init__(self, operators: Sequence[EnvelopeFaultOperator] | None = None):
         selected = tuple(operators) if operators is not None else (
-            DropoutOperator(), PacketLossOperator(), DelayOperator(),
+            DropoutOperator(), PacketLossOperator(), BurstLossOperator(), DelayOperator(),
             ArrivalShiftOperator(), BiasOperator(), OutlierOperator(),
             InvalidPayloadOperator(), DuplicateOperator(),
         )
@@ -171,8 +172,12 @@ class FaultInjectionEngine:
                 sequence_number=envelope.sequence_number,
                 fault_type=scenario.fault_type,
                 severity=1.0,
-                affected=True,
-                metadata={"input_index": input_index, "output_count": len(transformed)},
+                affected=transformed != (envelope,),
+                metadata={
+                    "input_index": input_index,
+                    "output_count": len(transformed),
+                    "operator_effect": transformed != (envelope,),
+                },
             ))
             applied += 1
             output.extend((input_index, item) for item in transformed)
