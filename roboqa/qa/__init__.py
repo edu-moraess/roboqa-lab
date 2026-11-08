@@ -16,6 +16,11 @@ from roboqa.qa.gate import (
     QualityGatePolicy,
     evaluate_quality_gate,
 )
+from roboqa.qa.integrated import (
+    IntegratedQualityError,
+    compute_integrated_quality_metrics,
+    evaluate_integrated_quality,
+)
 from roboqa.qa.metrics import QualityMetricError, compute_quality_metrics
 
 __all__ = [
@@ -29,6 +34,9 @@ __all__ = [
     "QualityReport",
     "QualityMetricError",
     "compute_quality_metrics",
+    "IntegratedQualityError",
+    "compute_integrated_quality_metrics",
+    "evaluate_integrated_quality",
     "MetricRule",
     "QualityGateError",
     "QualityGatePolicy",

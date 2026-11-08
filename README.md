@@ -47,7 +47,7 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 4.5-C | Strict Measurement adapter from accepted transport envelopes | **VALIDATED — 10 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-D1 | Deterministic event-time Fusion scheduling boundary | **VALIDATED — 15 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-D2 | Identity-preserving execution through Fusion runner | **VALIDATED — 32 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
-| 4.5-D3 | Replay/execution evidence propagation into Quality Metrics and Gate | PLANNED |
+| 4.5-D3 | Replay/execution evidence propagation into Quality Metrics and Gate | **VALIDATED — TARGETED TESTS, FULL PYTEST, RUFF, COMPILEALL** |
 | 4.6 | Streamlit Control Center | PLANNED |
 
 ### Relatório consolidado
@@ -234,3 +234,17 @@ Phase 4.5-C was manually validated in Colab on code checkpoint `77f0e6e267f08f86
 - Manual Colab validation: **32 targeted tests passed** across execution, scheduling, and adapter; full pytest reached 100% with exit code 0; full Ruff passed; full compileall exited 0. The full-suite output did not expose an unambiguous aggregate count.
 - Validated branch checkpoint: `43de077cf01b16c3114d5f7dfeeeaf53a6d2057d`; subsequent changes in this documentation checkpoint do not alter production code.
 - Specification: [Phase 4.5-D2 — Identity-preserving Fusion execution](docs/phase-4-5d2-identity-preserving-fusion-execution.md).
+
+
+### Phase 4.5-D3 — Integrated QA evidence propagation (VALIDATED)
+
+- Adds `compute_integrated_quality_metrics` while preserving the Phase 4.2 `compute_quality_metrics` API and semantics.
+- Adds run-scoped and sensor-scoped counts for unique source packets, delivery attempts, accepted, duplicate, late, invalid, dropped, updated, failed, and not-executed packets.
+- Adds transport acceptance, Fusion update, and Fusion execution-success ratios. Zero-denominator ratios remain explicitly MISSING; count metrics preserve legitimate zero values.
+- Verifies replay summary, execution record, native FilterResult status/diagnostics, and ordered telemetry agree before combining evidence.
+- Adds `evaluate_integrated_quality`, which delegates decisions to the existing versioned deterministic Quality Gate. No thresholds are inferred; source/output/configuration provenance remains explicit.
+- Added focused tests for packet accounting, per-sensor metrics, numerical failure/not-executed propagation, zero denominators, evidence mismatch rejection, and Gate PASS/FAIL/BLOCKED paths.
+- Manual Colab validation: targeted integrated-quality and regression tests passed; full `pytest -q` reached 100% with exit code 0; full Ruff passed; full compileall exited 0. The full-suite output did not expose an unambiguous aggregate test count, so none is inferred.
+- The initial Ruff run identified one unused test import; it was removed in commit `e4365e860ab27934cd2a40df135393fa72b4c01a`. After syncing that exact HEAD, all full checks passed.
+- Result: **FULL VALIDATION PASS**. Validation evidence is from manual Colab, not GitHub Actions.
+- Specification: [Phase 4.5-D3 — Integrated QA evidence propagation](docs/phase-4-5d3-integrated-qa-evidence.md).
