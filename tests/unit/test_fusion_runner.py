@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from roboqa.data.schemas import Measurement
+from roboqa.data.schemas import Measurement, SchemaError
 from roboqa.data.synthetic import make_synthetic_ground_truth
 from roboqa.fusion.result import FilterStatus
 from roboqa.fusion.runner import run_filter, simulate_measurements
@@ -169,13 +169,13 @@ def test_runner_reports_schema_failure_during_update(monkeypatch):
 )
 def test_simulation_rejects_invalid_noise_parameters(kwargs):
     gt = make_synthetic_ground_truth(n=3, dt=0.1, seed=1)
-    with pytest.raises(ValueError):
+    with pytest.raises(SchemaError):
         simulate_measurements(gt, **kwargs)
 
 
 @pytest.mark.parametrize("gps_every", [0, -1, 1.5])
 def test_simulation_rejects_invalid_gps_interval(gps_every):
     gt = make_synthetic_ground_truth(n=3, dt=0.1, seed=1)
-    with pytest.raises(ValueError, match="gps_every"):
+    with pytest.raises(SchemaError, match="gps_every"):
         simulate_measurements(gt, gps_every=gps_every)
 
