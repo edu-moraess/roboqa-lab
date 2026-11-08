@@ -87,7 +87,7 @@ def test_rejects_unknown_sensor_even_when_covariance_is_supplied():
 
 def test_rejects_payload_dimension_mismatch_for_known_sensor():
     result = replay((envelope(1, "gps", 1.0, 1.1, (2.0,)),))
-    with pytest.raises(MeasurementAdapterError, match="dim"):
+    with pytest.raises(MeasurementAdapterError, match="(?i)dim"):
         adapt_accepted_envelopes(result, sensor_covariances={"gps": np.eye(2)})
 
 
