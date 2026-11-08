@@ -9,6 +9,7 @@ from roboqa.ml.contracts import (
     FeatureSample,
     FeatureValue,
 )
+from roboqa.ml.features import FeatureEngineeringError, extract_temporal_features
 
 __all__ = [
     "AnomalyReference",
@@ -16,6 +17,8 @@ __all__ = [
     "FeatureAvailability",
     "FeatureDataset",
     "FeatureDatasetError",
+    "FeatureEngineeringError",
     "FeatureSample",
     "FeatureValue",
+    "extract_temporal_features",
 ]

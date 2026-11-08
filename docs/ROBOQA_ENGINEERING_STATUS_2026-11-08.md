@@ -586,3 +586,41 @@ Propagate replay and execution evidence into Quality Metrics and the determinist
 ### Next engineering checkpoint
 
 Review D3 integrated metrics and Gate behavior against representative nominal, bias, delay, dropout, packet-loss, duplicate, numerical-failure, and not-executed experiments. Keep all thresholds explicit and preserve the Quality Gate as the only decision authority.
+
+
+---
+
+## 24. Engineering addendum — Phase 4.4-B temporal feature engineering validation (2026-11-08)
+
+### Phase 4.4-B — FULL VALIDATION PASS
+
+- Branch: `feat/ml-feature-engineering-phase-4-4b`.
+- Validated code checkpoint: `0e8baa11888fac1752695a12ac0285b346c17fd5`.
+- Base: Phase 4.5-D3 documentation checkpoint `a631e5ddd2c0a1261fe61ee1ddf640dd7d159ecb`.
+- PR #20: https://github.com/edu-moraess/roboqa-lab/pull/20 — remains Draft, open, and unmerged; targets `feat/qa-evidence-propagation-phase-4-5d3`, not `main`.
+- Targeted Phase 4.4-B feature and Phase 4.4-A contract tests: **42 passed**.
+- Full `python -m pytest -q`: reached 100%, exit code **0**, no failures reported. The captured output did not expose an unambiguous aggregate test count; no total is inferred.
+- Full `ruff check roboqa tests`: **PASS**.
+- Full `python -m compileall -q roboqa tests`: exit code **0**.
+- The first full Ruff run identified import ordering in `roboqa/ml/__init__.py`; it was corrected in commit `0e8baa11888fac1752695a12ac0285b346c17fd5`. After syncing that exact checkpoint, targeted tests, full Ruff, compileall, and full pytest all passed.
+- Result: **FULL VALIDATION PASS**, based on manual Google Colab output. No GitHub Actions validation is claimed.
+
+### Implemented behavior
+
+- `extract_temporal_features` derives immutable `FeatureDataset` samples from Fusion `InnovationTelemetry`.
+- Uses deterministic fixed-duration windows anchored at the earliest telemetry timestamp and groups observations by sensor.
+- Emits update count, innovation norm mean/population standard deviation/maximum, NIS mean/population standard deviation/maximum, mean innovation covariance trace, and inter-update gap mean/maximum.
+- Empty windows preserve an available zero update count and mark other feature values MISSING; inter-update gaps are MISSING when fewer than two updates exist.
+- Source and configuration SHA-256 hashes bind ordered telemetry and extraction configuration.
+- Run-level split assignment and anomaly reference labels remain explicit metadata; anomaly labels are not emitted as model-input features.
+
+### Scope and limitations
+
+- No imputation, normalization, clipping, model training, inference, model downloads, or Quality Gate changes.
+- Only successful Fusion innovation telemetry is used. Transport-only dispositions and failed/missing updates remain represented in the D3 QA evidence stream; no implicit join or fabricated telemetry is introduced.
+- ML remains advisory-only. The deterministic Quality Gate remains the sole decision authority.
+- No merge or changes to `main` were performed.
+
+### Next engineering checkpoint
+
+Proceed to Phase 4.4-C: implement an explicit statistical anomaly baseline and an optional Isolation Forest advisory path only after specifying feature eligibility, split-safe preprocessing, reproducible configuration, and output provenance. Evaluation labels must remain outside model inputs, and ML scores must not override the deterministic Quality Gate.
