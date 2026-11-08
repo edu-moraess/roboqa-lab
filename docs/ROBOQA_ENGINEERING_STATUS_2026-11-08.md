@@ -199,6 +199,8 @@ Run the documented Phase 4.2 Colab validation. Fix any evidence-backed failures 
 
 ## 11. Engineering addendum — Phase 4.2 validation and Phase 4.3 implementation (2026-11-08)
 
+This addendum supersedes the earlier Phase 4.2 pending-validation statements in Sections 9 and 10, which are retained as historical snapshots.
+
 ### Phase 4.2 — Quality Metrics Engine: VALIDATION PASS
 
 - Branch: `feat/quality-metrics-phase-4-2`
