@@ -1,6 +1,6 @@
 # Phase 4.5-D1 — Deterministic Fusion Scheduling Contract
 
-**Implementation status:** implemented; **manual Colab validation pending**.
+**Implementation status:** implemented; **manual Colab validation PASS**.
 
 ## Audit findings
 
@@ -34,15 +34,16 @@ This phase adds an immutable, deterministic scheduling boundary:
 
 The EKF rejects negative prediction intervals and cannot rewind its state/covariance when an earlier acquisition-time event arrives after a later one. A true online arrival-order mode would require a separately specified fixed-lag buffer plus state checkpoint/replay semantics, bounded memory, watermark finalization, and a policy for packets arriving after finalization. D1 deliberately does not approximate that behavior.
 
-## Validation
+## Validation — PASS
 
-Manual Google Colab validation is required:
-- targeted `tests/unit/test_fusion_schedule.py`;
-- full `pytest -q`;
-- full Ruff;
-- full compileall.
+Manual Google Colab evidence:
+- Targeted `tests/unit/test_fusion_schedule.py`: **15 passed**.
+- Full `python -m pytest -q`: reached 100%, exit code 0, no failures reported. The captured output did not expose an aggregate test count; none is inferred.
+- Full `ruff check roboqa tests`: **All checks passed!**
+- Full `python -m compileall -q roboqa tests`: exit code 0.
+- Result: **FULL VALIDATION PASS** for D1 and repository compatibility.
 
-No validation PASS is claimed until actual outputs are reviewed.
+The full suite was run on branch `feat/fusion-scheduling-phase-4-5d1`, validated code checkpoint `43d0bd73f43e47b6dc0d3e0cc0f545e0127ba929`.
 
 ## Explicit non-goals
 
