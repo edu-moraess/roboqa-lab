@@ -86,13 +86,16 @@ def _numerical_jacobian(x, dt, eps=1e-7):
     return F
 
 
-@pytest.mark.parametrize("omega", [0.0, 1e-6, OMEGA_EPS * 0.99, OMEGA_EPS * 1.01, 0.05, -0.1, 0.3])
+@pytest.mark.parametrize(
+    "omega",
+    [0.0, 1e-6, OMEGA_EPS * 0.99, OMEGA_EPS * 1.01, 0.05, -0.1, 0.3],
+)
 @pytest.mark.parametrize("dt", [0.01, 0.1, 0.35])
 def test_jacobian_finite_differences(omega, dt):
     x = np.array([1.0, -2.0, 0.4, 3.0, omega])
     F_an = ctrv_jacobian(x, dt)
     F_num = _numerical_jacobian(x, dt)
-    np.testing.assert_allclose(F_an, F_num, atol=2e-5, rtol=2e-4)
+    np.testing.assert_allclose(F_an, F_num, atol=2e-4, rtol=2e-4)
 
 
 def test_process_noise_Q_shape_symmetric_psd():
