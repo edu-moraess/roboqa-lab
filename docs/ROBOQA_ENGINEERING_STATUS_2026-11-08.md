@@ -549,3 +549,40 @@ Propagate replay and execution evidence into Quality Metrics and the determinist
 - Existing `sensor_availability` retains its explicit expected-measurement denominator and is not redefined as physical sensor uptime.
 - No universal thresholds, implicit imputation, ML authority, Streamlit, CI/GitHub Actions, training, merge, or changes to `main`.
 - Manual Colab must run targeted D3 tests, existing QA metrics/Gate regression tests, integration replay/scheduler/adapter/execution tests, full pytest, full Ruff, and full compileall before validation status changes.
+
+
+---
+
+## 23. Engineering addendum — Phase 4.5-D3 integrated QA evidence propagation validation (2026-11-08)
+
+### Phase 4.5-D3 — FULL VALIDATION PASS
+
+- Branch: `feat/qa-evidence-propagation-phase-4-5d3`.
+- Validated code checkpoint: `e4365e860ab27934cd2a40df135393fa72b4c01a`.
+- Base: Phase 4.5-D2 documentation checkpoint `5ddd3a50d4e2de4666aaf65fb70f5c4bb6b5a54b`.
+- PR #19: https://github.com/edu-moraess/roboqa-lab/pull/19 — remains Draft, open, and unmerged; targets `feat/fusion-execution-phase-4-5d2`, not `main`.
+- Targeted integrated QA and regression test group: **PASS**.
+- Full `python -m pytest -q`: reached 100%, exit code 0, no failures reported. The output did not expose an unambiguous aggregate count; no total is inferred.
+- Full `ruff check roboqa tests`: **PASS**.
+- Full `python -m compileall -q roboqa tests`: **PASS**.
+- The first Ruff run identified one unused import in `tests/unit/test_integrated_quality.py`. It was removed in commit `e4365e860ab27934cd2a40df135393fa72b4c01a`. After syncing that exact remote HEAD, full Ruff, compileall, and pytest all passed.
+- Result: **FULL VALIDATION PASS**, based on manual Google Colab output. No GitHub Actions validation is claimed.
+
+### Integrated evidence behavior
+
+- Preserves the Phase 4.2 `compute_quality_metrics` API and adds `compute_integrated_quality_metrics`.
+- Validates consistency across transport replay summary, D2 execution record, native FilterResult diagnostics/status, and ordered Fusion telemetry.
+- Propagates source/delivery dispositions and Fusion terminal outcomes into run- and sensor-scoped quality observations.
+- Distinguishes explicit zero counts from unavailable ratios with zero denominators; missing evidence is not silently converted to zero.
+- `evaluate_integrated_quality` delegates the decision to the existing deterministic, versioned Quality Gate. The Gate remains the sole decision authority.
+
+### Scope and limitations
+
+- Existing Phase 4.2 metrics and Phase 4.3 Gate policy semantics remain intact.
+- Sensor availability retains its explicit expected-measurement denominator and is not redefined as physical uptime.
+- This phase does not add ML authority, model training, Streamlit, CI/GitHub Actions, or online arrival-order Fusion execution.
+- PR #19 remains Draft and unmerged. No merge or changes to `main` were performed.
+
+### Next engineering checkpoint
+
+Review D3 integrated metrics and Gate behavior against representative nominal, bias, delay, dropout, packet-loss, duplicate, numerical-failure, and not-executed experiments. Keep all thresholds explicit and preserve the Quality Gate as the only decision authority.
