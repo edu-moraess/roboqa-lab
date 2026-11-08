@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 
 from roboqa.fault_injection import (
@@ -16,7 +15,9 @@ def _envelopes():
 
 
 def _scenario(kind=FaultType.DELAY, params=None, start=0.0, end=3.0, seed=7):
-    return FaultScenario("engine-test", kind, ("gps",), start, end, seed, params or {"delay_s": 1.0})
+    if params is None:
+        params = {"delay_s": 1.0} if kind == FaultType.DELAY else {}
+    return FaultScenario("engine-test", kind, ("gps",), start, end, seed, params)
 
 
 def test_engine_applies_only_matching_sensor_and_interval():
