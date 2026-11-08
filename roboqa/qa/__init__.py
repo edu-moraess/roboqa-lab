@@ -1,4 +1,5 @@
-"""RoboQA quality metric and report contracts."""
+"""RoboQA quality metric calculation and report contracts."""
+
 from roboqa.qa.contracts import (
     FindingSeverity,
     MetricAvailability,
@@ -9,6 +10,7 @@ from roboqa.qa.contracts import (
     QualityFinding,
     QualityReport,
 )
+from roboqa.qa.metrics import QualityMetricError, compute_quality_metrics
 
 __all__ = [
     "FindingSeverity",
@@ -19,4 +21,6 @@ __all__ = [
     "QualityDecision",
     "QualityFinding",
     "QualityReport",
+    "QualityMetricError",
+    "compute_quality_metrics",
 ]
