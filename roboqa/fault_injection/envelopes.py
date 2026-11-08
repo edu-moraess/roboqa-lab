@@ -1,22 +1,16 @@
 """Raw event envelopes at the boundary before Measurement validation."""
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
+import math
 from types import MappingProxyType
 from typing import Any, Mapping
-
-import numpy as np
 
 from roboqa.fault_injection.contracts import ContractError, _non_empty
 
 
 def _freeze_raw(value: Any, path: str = "payload") -> Any:
-    """Freeze JSON-like and NumPy raw values while preserving NaN and Inf."""
-    if isinstance(value, np.ndarray):
-        return _freeze_raw(value.tolist(), path)
-    if isinstance(value, np.generic):
-        return _freeze_raw(value.item(), path)
+    """Freeze JSON-like raw values while deliberately preserving NaN and Inf."""
     if value is None or isinstance(value, (str, bool, int, float)):
         return value
     if isinstance(value, Mapping):

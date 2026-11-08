@@ -1,6 +1,5 @@
 import math
 
-import numpy as np
 import pytest
 
 from roboqa.fault_injection import ContractError, RawMeasurementEnvelope
@@ -47,13 +46,3 @@ def test_raw_envelope_rejects_invalid_transport_identity():
             sensor_id="", acquisition_time=1.0, arrival_time=1.0,
             sequence_number=0, payload={},
         )
-
-
-def test_raw_envelope_accepts_numpy_payload_without_mutable_aliases():
-    source = np.array([1.0, 2.0])
-    envelope = RawMeasurementEnvelope(
-        sensor_id="gps", acquisition_time=1.0, arrival_time=1.1,
-        sequence_number=0, payload={"z": source},
-    )
-    source[0] = 99.0
-    assert envelope.payload["z"] == (1.0, 2.0)
