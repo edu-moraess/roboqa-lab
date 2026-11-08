@@ -127,10 +127,11 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 
 ## Próximas etapas
 
-1. **4.3 — Deterministic Quality Gate:** validar no Colab e fechar a política de decisões auditáveis.
-2. **4.4 — ML Intelligence:** detecção de anomalias consultiva, após validação dos dados e métricas.
-3. **4.5 — Fault-to-QA Integration:** avaliar os efeitos das falhas no pipeline completo.
-4. **4.6 — Streamlit Control Center:** interface operacional de experimentos, telemetria e relatórios.
+1. **4.4-B — Feature Engineering:** extrair features temporais a partir de telemetria e evidências validadas.
+2. **4.4-C — Anomaly Baselines:** baseline estatístico e detector consultivo, sem autoridade sobre o Quality Gate.
+3. **4.4-D/E — Evaluation and Advisory Report:** avaliação por cenário/run, calibração, explicabilidade e relatório independente.
+4. **4.5 — Fault-to-QA Integration:** avaliar os efeitos das falhas no pipeline completo.
+5. **4.6 — Streamlit Control Center:** interface operacional de experimentos, telemetria e relatórios.
 
 ## Validação e desenvolvimento
 
