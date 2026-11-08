@@ -10,7 +10,6 @@ from roboqa.integration.contracts import (
     TransportReplaySummary,
 )
 
-
 HASH_A = "a" * 64
 HASH_B = "b" * 64
 HASH_C = "c" * 64
