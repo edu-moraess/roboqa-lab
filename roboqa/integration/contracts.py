@@ -158,6 +158,13 @@ class TransportReplaySummary:
             raise IntegrationContractError("delivered_count must equal accepted + duplicate + late + invalid")
         if self.dropped_count > self.source_count:
             raise IntegrationContractError("dropped_count cannot exceed source_count")
+        source_accounted = (
+            self.accepted_count + self.late_count + self.invalid_count + self.dropped_count
+        )
+        if source_accounted != self.source_count:
+            raise IntegrationContractError(
+                "source_count must equal accepted + late + invalid + dropped unique packets"
+            )
         if len(decisions) != self.delivered_count + self.dropped_count:
             raise IntegrationContractError("decisions must account for every delivery and dropped source packet")
 
