@@ -1,7 +1,11 @@
 import pytest
 
 from roboqa.fault_injection import (
-    ContractError, FaultInjectionEngine, FaultScenario, FaultStatus, FaultType,
+    ContractError,
+    FaultInjectionEngine,
+    FaultScenario,
+    FaultStatus,
+    FaultType,
     RawMeasurementEnvelope,
 )
 
@@ -110,3 +114,51 @@ def test_campaign_rejects_empty_or_ambiguous_scenario_lists():
     repeated = _scenario(FaultType.DELAY, {"delay_s": 0.1})
     with pytest.raises(ContractError, match="unique"):
         engine.run_campaign(_envelopes(), (repeated, repeated))
+
+
+
+def test_engine_constructor_rejects_empty_invalid_and_duplicate_registries():
+    from roboqa.fault_injection.operators import DelayOperator
+
+    with pytest.raises(ContractError, match="at least one"):
+        FaultInjectionEngine(())
+    with pytest.raises(ContractError, match="implement EnvelopeFaultOperator"):
+        FaultInjectionEngine((object(),))
+    with pytest.raises(ContractError, match="duplicate operator"):
+        FaultInjectionEngine((DelayOperator(), DelayOperator()))
+
+
+def test_engine_rejects_invalid_scenario_and_operator_output_contract():
+    from roboqa.fault_injection.operators import DelayOperator
+
+    engine = FaultInjectionEngine()
+    with pytest.raises(ContractError, match="scenario must"):
+        engine.run(_envelopes(), object())
+
+    class BadOperator:
+        operator_id = "bad"
+        version = "1"
+        fault_type = FaultType.DELAY
+
+        def validate_parameters(self, parameters):
+            return None
+
+        def is_applicable(self, envelope, scenario):
+            return True
+
+        def apply(self, envelope, scenario, rng):
+            return [envelope]
+
+    bad_engine = FaultInjectionEngine((BadOperator(),))
+    scenario = _scenario(FaultType.DELAY, {"delay_s": 1.0})
+    with pytest.raises(ContractError, match="must return a tuple"):
+        bad_engine.run(_envelopes(), scenario)
+
+
+def test_engine_reports_not_applicable_when_no_envelope_matches():
+    execution = FaultInjectionEngine().run(
+        _envelopes(),
+        FaultScenario("none", FaultType.DELAY, ("lidar",), 0.0, 3.0, 1, {"delay_s": 1.0}),
+    )
+    assert execution.result.status == FaultStatus.NOT_APPLICABLE
+    assert execution.result.applied_count == 0
