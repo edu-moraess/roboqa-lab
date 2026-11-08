@@ -118,7 +118,10 @@ class QualityGatePolicy:
         if not isinstance(self.policy_version, str) or not self.policy_version.strip():
             raise QualityGateError("policy_version must be a non-empty string")
         object.__setattr__(self, "policy_version", self.policy_version.strip())
-        rules = tuple(self.rules)
+        try:
+            rules = tuple(self.rules)
+        except TypeError as exc:
+            raise QualityGateError("rules must be an iterable of MetricRule instances") from exc
         if not rules or any(not isinstance(rule, MetricRule) for rule in rules):
             raise QualityGateError("rules must contain at least one MetricRule")
         rule_ids = [rule.rule_id for rule in rules]
