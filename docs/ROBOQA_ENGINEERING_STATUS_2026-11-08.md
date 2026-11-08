@@ -269,3 +269,27 @@ This addendum supersedes the earlier Phase 4.2 pending-validation statements in 
 - Result: **VALIDATION PASS**. This validates contracts and repository compatibility only; it does not validate a trained detector or anomaly-detection performance.
 - No training, inference, feature extraction, model dependency, dataset download, or Quality Gate integration was introduced.
 - PR #13 remains Draft, open, and unmerged. No changes were made to `main`.
+
+
+---
+
+## 14. Engineering addendum — Phase 4.5-A Fault-to-QA contracts (2026-11-08)
+
+### Phase 4.5-A — VALIDATION PASS
+
+- Branch: `feat/fault-to-qa-contracts-phase-4-5a`.
+- Validated HEAD: `c7e5e3e04e575fab66267835c8a249bbe5273247`.
+- Base: `feat/ml-intelligence-contracts-phase-4-4a`, with no divergence behind the base at branch creation.
+- PR #14: https://github.com/edu-moraess/roboqa-lab/pull/14 — remains Draft, open, and unmerged.
+- Added immutable `EnvelopeIdentity`, `DeliveryDecision`, `TransportReplaySummary`, explicit delivery dispositions, ordering policy declaration, three-clock evidence validation, source/delivery accounting, and SHA-256 provenance contracts.
+- Manual Colab targeted tests: **52 passed**.
+- Manual Colab full `pytest -q`: reached 100%, exit code 0. The captured output did not expose an aggregate test count; no total is inferred.
+- `ruff check roboqa tests`: **All checks passed!**
+- `python -m compileall -q roboqa tests`: completed without errors.
+- A test-helper defect was corrected: the original helper masked an explicitly supplied arrival timestamp for DROPPED cases. The corrected tests independently verify that DROPPED cannot claim arrival or processing. A subsequent Ruff-only spacing correction was also applied.
+- Result: **VALIDATION PASS** for contracts and repository compatibility. This is not evidence of a functioning transport replay/scheduler, Measurement adapter, duplicate suppression, arrival-order Fusion execution, or complete end-to-end integration.
+- No training, model inference, UI, CI, merge, or changes to `main` were performed.
+
+### Next engineering checkpoint
+
+Proceed to Phase 4.5-B with explicit replay semantics: define ordering, late packet/watermark policy, duplicate identity and suppression, dropped-packet accounting, three-clock propagation, and a tested adapter boundary before wiring faulted deliveries into Fusion. Preserve the deterministic Quality Gate as the sole decision authority.
