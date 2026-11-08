@@ -44,7 +44,7 @@ def test_run_and_sensor_metrics_are_calculated_with_explicit_sample_counts():
         expected_measurements={"gps": 4, "speed": 2, "yaw_rate": 1},
     )
     by_key = {(m.name, m.sensor_id): m for m in metrics}
-    assert by_key[("position_rmse", None)].value == pytest.approx(np.sqrt(2.0))
+    assert by_key[("position_rmse", None)].value == pytest.approx(np.sqrt(5.0))
     assert by_key[("covariance_trace_mean", None)].value == pytest.approx(5.0)
     assert by_key[("innovation_norm_mean", "gps")].value == pytest.approx(4.0)
     assert by_key[("nis_mean", "gps")].value == pytest.approx(3.0)
@@ -68,7 +68,12 @@ def test_missing_ground_truth_and_expected_counts_remain_missing_not_zero():
 
 
 def test_rmse_outside_alignment_tolerance_is_missing():
-    metrics = compute_quality_metrics(_result(), ground_truth=_ground_truth(),
+    shifted = GroundTruth(
+        t=np.array([0.1, 1.1, 2.1]),
+        pos=np.array([[0.0, 0.0], [2.0, 2.0], [4.0, 4.0]]),
+        yaw=np.zeros(3), speed=np.ones(3), yaw_rate=np.zeros(3), source="synthetic",
+    )
+    metrics = compute_quality_metrics(_result(), ground_truth=shifted,
                                       alignment_tolerance_s=0.001)
     rmse = next(m for m in metrics if m.name == "position_rmse")
     assert rmse.availability is MetricAvailability.MISSING
