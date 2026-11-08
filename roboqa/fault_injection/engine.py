@@ -179,7 +179,11 @@ class FaultInjectionEngine:
                     "operator_effect": transformed != (envelope,),
                 },
             ))
-            applied += 1
+            if transformed != (envelope,):
+                applied += 1
+            else:
+                # A stochastic operator may inspect a packet but leave it unchanged.
+                skipped += 1
             output.extend((input_index, item) for item in transformed)
 
         # Arrival order is transport order; sequence_number retains source identity.
