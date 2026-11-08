@@ -32,8 +32,8 @@ def dispositions(result):
 def test_arrival_order_uses_watermark_and_emits_only_accepted():
     source = (
         packet(1, 1.0, 1.1),
-        packet(2, 2.0, 1.2),
-        packet(3, 1.5, 1.3),
+        packet(2, 2.0, 2.2),
+        packet(3, 1.5, 2.3),
     )
     result = replay_transport(source, source, allowed_lateness_s=0.25)
 
@@ -50,8 +50,8 @@ def test_arrival_order_uses_watermark_and_emits_only_accepted():
 def test_allowed_lateness_can_retain_out_of_order_event_time_packet():
     source = (
         packet(1, 1.0, 1.1),
-        packet(2, 2.0, 1.2),
-        packet(3, 1.5, 1.3),
+        packet(2, 2.0, 2.2),
+        packet(3, 1.5, 2.3),
     )
     result = replay_transport(source, source, allowed_lateness_s=0.6)
 
@@ -63,8 +63,8 @@ def test_allowed_lateness_can_retain_out_of_order_event_time_packet():
 def test_acquisition_order_reorders_and_does_not_classify_late():
     source = (
         packet(1, 1.0, 1.1),
-        packet(2, 2.0, 1.2),
-        packet(3, 1.5, 1.3),
+        packet(2, 2.0, 2.2),
+        packet(3, 1.5, 2.3),
     )
     result = replay_transport(
         source, source, ordering_policy=TransportOrderingPolicy.ACQUISITION_ORDER
