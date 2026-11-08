@@ -124,4 +124,4 @@ def test_scheduler_occurrences_are_ready_for_existing_fault_engine():
     )
     executions = tuple(FaultInjectionEngine().run(envelopes, item.scenario) for item in occurrences)
     assert [item.result.applied_count for item in executions] == [1, 1]
-    assert all(not item.output_envelopes for item in executions)
+    assert [[env.sequence_number for env in item.output_envelopes] for item in executions] == [[1], [0]]
