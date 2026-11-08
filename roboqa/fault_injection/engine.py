@@ -1,4 +1,4 @@
-"""Deterministic orchestration for fault injection over raw envelopes (Phase 3.2)."""
+"""Deterministic orchestration for fault injection over raw envelopes (Phases 3.2–3.3-C)."""
 from __future__ import annotations
 
 import math
@@ -20,6 +20,7 @@ from roboqa.fault_injection.envelopes import RawMeasurementEnvelope
 from roboqa.fault_injection.operators import (
     ArrivalShiftOperator,
     BiasOperator,
+    BurstLossOperator,
     DelayOperator,
     DropoutOperator,
     DuplicateOperator,
@@ -92,7 +93,7 @@ class FaultInjectionEngine:
 
     def __init__(self, operators: Sequence[EnvelopeFaultOperator] | None = None):
         selected = tuple(operators) if operators is not None else (
-            DropoutOperator(), PacketLossOperator(), DelayOperator(),
+            DropoutOperator(), PacketLossOperator(), BurstLossOperator(), DelayOperator(),
             ArrivalShiftOperator(), BiasOperator(), OutlierOperator(),
             InvalidPayloadOperator(), DuplicateOperator(),
         )
@@ -126,7 +127,7 @@ class FaultInjectionEngine:
         operator = self._operators.get(scenario.fault_type)
         if operator is None:
             raise ContractError(
-                f"unsupported fault type for Phase 3.2: {scenario.fault_type.value}"
+                f"unsupported fault type for current engine: {scenario.fault_type.value}"
             )
         operator.validate_parameters(scenario.parameters)
         rng = np.random.default_rng(scenario.seed)
@@ -171,10 +172,18 @@ class FaultInjectionEngine:
                 sequence_number=envelope.sequence_number,
                 fault_type=scenario.fault_type,
                 severity=1.0,
-                affected=True,
-                metadata={"input_index": input_index, "output_count": len(transformed)},
+                affected=transformed != (envelope,),
+                metadata={
+                    "input_index": input_index,
+                    "output_count": len(transformed),
+                    "operator_effect": transformed != (envelope,),
+                },
             ))
-            applied += 1
+            if transformed != (envelope,):
+                applied += 1
+            else:
+                # A stochastic operator may inspect a packet but leave it unchanged.
+                skipped += 1
             output.extend((input_index, item) for item in transformed)
 
         # Arrival order is transport order; sequence_number retains source identity.

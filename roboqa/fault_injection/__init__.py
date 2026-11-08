@@ -19,6 +19,7 @@ from roboqa.fault_injection.envelopes import RawMeasurementEnvelope
 from roboqa.fault_injection.operators import (
     ArrivalShiftOperator,
     BiasOperator,
+    BurstLossOperator,
     DelayOperator,
     DropoutOperator,
     DuplicateOperator,
@@ -45,7 +46,7 @@ __all__ = [
     "ContractError", "FaultEvent", "FaultOperator", "FaultResult", "FaultScenario",
     "FaultStatus", "FaultType", "RecoveryRecord", "RecoveryStatus",
     "FaultCampaignExecution", "FaultExecution", "FaultInjectionEngine", "RawMeasurementEnvelope",
-    "ArrivalShiftOperator", "BiasOperator", "DelayOperator", "DropoutOperator",
+    "ArrivalShiftOperator", "BiasOperator", "BurstLossOperator", "DelayOperator", "DropoutOperator",
     "DuplicateOperator", "EnvelopeFaultOperator", "InvalidPayloadOperator",
     "OutlierOperator", "PacketLossOperator", "FaultProvenance",
     "FaultSchedule", "ScheduledFaultOccurrence", "TemporalScheduler",
