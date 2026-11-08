@@ -253,3 +253,19 @@ This addendum supersedes the earlier Phase 4.2 pending-validation statements in 
 - No feature extraction, preprocessing, training, inference, model dependency, dataset download, or Quality Gate integration was added.
 - Validation: **PENDING MANUAL COLAB**. Do not claim the phase validated until targeted tests, full pytest, Ruff, and compileall outputs are reviewed.
 - PR #13 is intended to remain Draft and target the Phase 4.3 branch. No merge is authorized or performed.
+
+
+---
+
+## 13. Engineering addendum — Phase 4.4-A validation (2026-11-08)
+
+### Phase 4.4-A — ML Feature and Dataset Contracts: VALIDATION PASS
+
+- Branch: `feat/ml-intelligence-contracts-phase-4-4a`.
+- Validated HEAD before documentation updates: `fa03643f18683b6317c4806e4d04709733ebb3d7`.
+- Manual Colab targeted validation: `tests/unit/test_ml_contracts.py` — **30 tests passed**; Ruff on the ML package and targeted test file reported `All checks passed!`; targeted compileall completed without errors.
+- Manual Colab full validation: `python -m pytest -q` reached 100% with no reported failures; `ruff check roboqa tests --output-format=full` reported `All checks passed!`; `python -m compileall -q roboqa tests` completed without errors.
+- The captured full-suite output did not expose an unambiguous aggregate test count; no total is inferred.
+- Result: **VALIDATION PASS**. This validates contracts and repository compatibility only; it does not validate a trained detector or anomaly-detection performance.
+- No training, inference, feature extraction, model dependency, dataset download, or Quality Gate integration was introduced.
+- PR #13 remains Draft, open, and unmerged. No changes were made to `main`.
