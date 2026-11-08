@@ -58,7 +58,7 @@ def test_packet_loss_is_seeded_and_probability_is_bounded():
         for seed in range(20)
     )
     assert first == second
-    with pytest.raises(ContractError, match="\[0, 1\]"):
+    with pytest.raises(ContractError, match=r"\[0, 1\]"):
         operator.validate_parameters({"loss_probability": 1.1})
     with pytest.raises(ContractError):
         operator.validate_parameters({"loss_probability": -0.1})
