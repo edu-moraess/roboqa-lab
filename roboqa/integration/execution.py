@@ -20,6 +20,24 @@ class FusionExecutionError(ValueError):
     """Raised when a Fusion schedule cannot be executed or traced safely."""
 
 
+def _json_safe(value: Any) -> Any:
+    """Encode non-finite raw evidence without emitting non-standard JSON numbers."""
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    if isinstance(value, (float, np.floating)):
+        number = float(value)
+        if math.isnan(number):
+            return "NaN"
+        if math.isinf(number):
+            return "+Infinity" if number > 0 else "-Infinity"
+        return number
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_json_safe(item) for item in value]
+    return str(value)
+
+
 class ExecutionDisposition(str, Enum):
     UPDATED = "updated"
     FAILED = "failed"
@@ -114,9 +132,9 @@ def _record_document(
                     "source_id": item.identity.source_id,
                     "sequence_number": item.identity.sequence_number,
                     "disposition": item.disposition.value,
-                    "acquisition_time": item.acquisition_time,
-                    "arrival_time": item.arrival_time,
-                    "processing_time": item.processing_time,
+                    "acquisition_time": _json_safe(item.acquisition_time),
+                    "arrival_time": _json_safe(item.arrival_time),
+                    "processing_time": _json_safe(item.processing_time),
                     "reason": item.reason,
                 }
                 for item in replay_summary.decisions
@@ -146,7 +164,7 @@ def _record_document(
         "covariance_trace": [
             [list(row) for row in matrix] for matrix in covariance_trace
         ],
-        "configuration": configuration,
+        "configuration": _json_safe(configuration),
     }
 
 
