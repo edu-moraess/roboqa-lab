@@ -48,7 +48,9 @@ def test_engine_packet_loss_probability_zero_preserves_packets_and_marks_no_effe
     scenario = _scenario(FaultType.PACKET_LOSS, {"loss_probability": 0.0})
     execution = FaultInjectionEngine().run(_envelopes(), scenario)
     assert len(execution.output_envelopes) == 3
-    assert execution.result.applied_count == 2
+    assert execution.result.applied_count == 0
+    assert execution.result.skipped_count == 3
+    assert execution.result.status == FaultStatus.NOT_APPLICABLE
     assert all(not event.affected for event in execution.result.events)
 
 
