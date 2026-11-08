@@ -116,7 +116,6 @@ def test_campaign_rejects_empty_or_ambiguous_scenario_lists():
         engine.run_campaign(_envelopes(), (repeated, repeated))
 
 
-
 def test_engine_constructor_rejects_empty_invalid_and_duplicate_registries():
     from roboqa.fault_injection.operators import DelayOperator
 
@@ -129,8 +128,6 @@ def test_engine_constructor_rejects_empty_invalid_and_duplicate_registries():
 
 
 def test_engine_rejects_invalid_scenario_and_operator_output_contract():
-    from roboqa.fault_injection.operators import DelayOperator
-
     engine = FaultInjectionEngine()
     with pytest.raises(ContractError, match="scenario must"):
         engine.run(_envelopes(), object())
