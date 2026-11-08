@@ -11,6 +11,12 @@ from roboqa.qa.contracts import (
     QualityReport,
 )
 from roboqa.qa.metrics import QualityMetricError, compute_quality_metrics
+from roboqa.qa.gate import (
+    MetricRule,
+    QualityGateError,
+    QualityGatePolicy,
+    evaluate_quality_gate,
+)
 
 __all__ = [
     "FindingSeverity",
@@ -23,4 +29,8 @@ __all__ = [
     "QualityReport",
     "QualityMetricError",
     "compute_quality_metrics",
+    "MetricRule",
+    "QualityGateError",
+    "QualityGatePolicy",
+    "evaluate_quality_gate",
 ]
