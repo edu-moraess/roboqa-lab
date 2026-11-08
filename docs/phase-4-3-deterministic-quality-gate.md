@@ -76,3 +76,15 @@ pytest -q
 ```
 
 Keep the phase unvalidated until the actual manual Colab outputs are reviewed.
+
+## Validation evidence (2026-11-08)
+
+Manual Colab validation was completed on branch `feat/deterministic-quality-gate-phase-4-3`,
+HEAD `1390ddd45c0da9fc4a0dfc4fd1d897c783d46105`:
+
+- Full `python -m pytest -q`: reached 100% with no reported failures.
+- `ruff check roboqa tests --output-format=full`: `All checks passed!`.
+- `python -m compileall -q roboqa tests`: completed without errors.
+
+The captured output did not expose an aggregate test count; none is asserted here.
+Result: **VALIDATION PASS**. PR #12 remains open, Draft, and unmerged.
