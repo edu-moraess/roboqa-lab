@@ -95,7 +95,7 @@ def test_invalid_operator_parameters_are_rejected(operator, params):
 def test_operator_descriptions_and_parameter_type_guards():
     operator = DelayOperator()
     assert operator.describe() == {
-        "operator_id": "delay", "version": "1.0.0", "fault_type": "DELAY"
+        "operator_id": "delay", "version": "1.0.0", "fault_type": FaultType.DELAY.value
     }
     with pytest.raises(ContractError, match="mapping"):
         operator.validate_parameters(None)
