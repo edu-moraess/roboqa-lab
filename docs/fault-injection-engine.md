@@ -14,7 +14,7 @@ Quality Gate, or Streamlit.
 | `SENSOR_DROPOUT` | `dropout` | none | Removes eligible envelopes |
 | `PACKET_LOSS` | `packet-loss` | none | Removes eligible packets |
 | `DELAY` | `delay` | `delay_s >= 0` | Increases arrival time; acquisition time is preserved |
-| `OUT_OF_ORDER` | `arrival-shift` | finite `shift_s` | Shifts arrival time; negative values can reorder packets |
+| `OUT_OF_ORDER` | `arrival-shift` | finite `shift_s`, optional `sequence_numbers` | Shifts selected packet arrival times; negative values can reorder a selected subset |
 | `BIAS` | `bias` | `offset` vector | Adds component-wise offset to payload `z` |
 | `OUTLIER` | `outlier` | `sigma > 0`, optional `index` | Adds seeded Gaussian perturbation to one `z` component |
 | `INVALID_PAYLOAD` | `invalid-payload` | optional `kind`, `index` | Injects NaN or +/-Inf into raw `z` |
