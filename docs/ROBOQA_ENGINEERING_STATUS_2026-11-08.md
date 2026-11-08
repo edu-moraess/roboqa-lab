@@ -624,3 +624,32 @@ Review D3 integrated metrics and Gate behavior against representative nominal, b
 ### Next engineering checkpoint
 
 Proceed to Phase 4.4-C: implement an explicit statistical anomaly baseline and an optional Isolation Forest advisory path only after specifying feature eligibility, split-safe preprocessing, reproducible configuration, and output provenance. Evaluation labels must remain outside model inputs, and ML scores must not override the deterministic Quality Gate.
+
+
+---
+
+## 25. Engineering checkpoint — Phase 4.4-C advisory anomaly baselines (2026-11-08)
+
+### Scope implemented; manual validation pending
+
+- Branch: `feat/ml-anomaly-baselines-phase-4-4c`.
+- Base: Phase 4.4-B validated/documented branch checkpoint `7806310c6b0ef118dd94da0f39dce47d27bac5c1`.
+- Adds `roboqa/ml/anomaly.py` with a robust statistical baseline and optional Isolation Forest.
+- Adds `tests/unit/test_ml_anomaly.py`, public exports in `roboqa/ml/__init__.py`, optional `ml` extra in `pyproject.toml`, and specification `docs/phase-4-4c-advisory-anomaly-baselines.md`.
+- Statistical baseline: TRAIN-only median/MAD robust scaling, IQR/std fallback, constant-feature exclusion, max absolute robust z-score, and TRAIN empirical quantile threshold.
+- Isolation Forest: lazy optional scikit-learn import; TRAIN-only fit; explicit contamination, random seed, and estimator count; same TRAIN-derived feature transform.
+- Leakage controls: VALIDATION/TEST never participate in fitting or threshold/transform derivation; reference labels are not read; missing required features produce UNSCORABLE rather than imputation.
+- Provenance: training data hash binds selected TRAIN identities and feature values; model hash binds training hash, transform, and parameters.
+- Advisory outputs NORMAL/ANOMALOUS/UNSCORABLE are not Quality Gate decisions. No Gate integration or decision authority was added.
+- Optional install: `pip install -e ".[ml]"` for Isolation Forest. Core imports do not require scikit-learn.
+- Validation status: **PENDING MANUAL COLAB**. Do not treat this phase as validated until targeted tests, full pytest, Ruff, and compileall pass on the exact synchronized commit.
+- No GitHub Actions validation, no merge, and no changes to `main`.
+
+### Validation checklist
+
+```bash
+python -m pytest -q tests/unit/test_ml_anomaly.py
+ruff check roboqa tests
+python -m compileall -q roboqa tests
+python -m pytest -q
+```
