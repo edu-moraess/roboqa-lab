@@ -1,7 +1,5 @@
 """Advisory ML contracts and tooling for RoboQA Lab."""
 
-from roboqa.ml.features import FeatureEngineeringError, extract_temporal_features
-
 from roboqa.ml.contracts import (
     AnomalyReference,
     DatasetSplit,
@@ -11,6 +9,7 @@ from roboqa.ml.contracts import (
     FeatureSample,
     FeatureValue,
 )
+from roboqa.ml.features import FeatureEngineeringError, extract_temporal_features
 
 __all__ = [
     "AnomalyReference",
