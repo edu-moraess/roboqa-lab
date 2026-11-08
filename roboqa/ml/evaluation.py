@@ -53,7 +53,11 @@ def _ratio(value: float | None, name: str) -> float | None:
 
 
 def _sha256(value: str, name: str) -> str:
-    digest = _non_empty(value, name).lower()
+    if not isinstance(value, str):
+        raise AnomalyEvaluationError(
+            f"{name} must be a 64-character SHA-256 hex digest"
+        )
+    digest = value.strip().lower()
     if re.fullmatch(r"[0-9a-f]{64}", digest) is None:
         raise AnomalyEvaluationError(
             f"{name} must be a 64-character SHA-256 hex digest"
