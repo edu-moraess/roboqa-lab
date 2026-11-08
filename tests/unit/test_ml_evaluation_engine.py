@@ -3,11 +3,14 @@ import pytest
 
 from roboqa.ml.anomaly import AnomalyDecision, AnomalyPrediction
 from roboqa.ml.contracts import (
-    AnomalyReference, DatasetSplit, FeatureDataset, FeatureSample, FeatureValue,
+    AnomalyReference,
+    DatasetSplit,
+    FeatureDataset,
+    FeatureSample,
+    FeatureValue,
 )
 from roboqa.ml.evaluation import AnomalyEvaluationError, EvaluationScope
 from roboqa.ml.evaluation_engine import evaluate_anomaly_predictions
-
 
 HASH_A = "a" * 64
 HASH_B = "b" * 64
