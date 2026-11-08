@@ -76,6 +76,11 @@ def _envelope_document(item: RawMeasurementEnvelope) -> dict:
     }
 
 
+def _identity_sort_key(item: RawMeasurementEnvelope) -> tuple[str, str, int]:
+    identity = _identity(item)
+    return (identity.sensor_id, identity.source_id or "", identity.sequence_number)
+
+
 def _fingerprint(item: RawMeasurementEnvelope) -> str:
     encoded = json.dumps(
         _envelope_document(item), sort_keys=True, separators=(",", ":"), ensure_ascii=False
@@ -221,7 +226,9 @@ def replay_transport(
     dropped = [
         (key, item) for key, item in source_by_key.items() if key not in seen
     ]
-    for _, item in sorted(dropped, key=lambda pair: pair[0]):
+    for _, item in sorted(dropped, key=lambda pair: (
+        pair[0][0], pair[0][1] or "", pair[0][2]
+    )):
         decisions.append(DeliveryDecision(
             identity=_identity(item),
             disposition=DeliveryDisposition.DROPPED,
@@ -233,7 +240,7 @@ def replay_transport(
     counts[DeliveryDisposition.DROPPED] = len(dropped)
 
     source_hash = _collection_hash(sorted(source, key=lambda item: (
-        _identity(item).key, _fingerprint(item)
+        _identity_sort_key(item), _fingerprint(item)
     )))
     delivered_hash = _collection_hash(ordered)
     configuration = {
