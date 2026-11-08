@@ -4,7 +4,8 @@ Fase 1 — Data Engine (hardened)
 ARQTECH LABS / RoboQA Lab
 
 Decisões de validação:
-- Arrays internos são copiados na construção (imutabilidade efetiva).
+- Arrays internos são copiados na construção e marcados write=False
+  (imutabilidade efetiva via setflags).
 - Timestamps devem ser finitos, monotônicos não-decrescentes.
 - Duplicatas de timestamp são rejeitadas (tolerância 1e-12 s).
 - NaN / Inf são rejeitados em todos os campos numéricos.
@@ -29,16 +30,25 @@ _ALLOWED_SOURCES = frozenset({"kitti_real", "synthetic", "derived"})
 
 
 def _as_1d_float64(arr: np.ndarray, name: str) -> np.ndarray:
-    """Converte e valida array 1D float64, rejeitando não-finitos."""
+    """Converte e valida array 1D float64, rejeitando não-finitos.
+
+    Retorna cópia defensiva marcada como somente leitura (write=False).
+    """
     a = np.asarray(arr, dtype=np.float64)
     if a.ndim != 1:
         raise SchemaError(f"{name} deve ser 1D, recebido shape {a.shape}")
     if not np.all(np.isfinite(a)):
         raise SchemaError(f"{name} contém NaN ou Inf")
-    return a.copy()  # cópia defensiva
+    out = a.copy()
+    out.setflags(write=False)
+    return out
 
 
 def _as_2d_float64(arr: np.ndarray, name: str, expected_cols: int | None = None) -> np.ndarray:
+    """Converte e valida array 2D float64, rejeitando não-finitos.
+
+    Retorna cópia defensiva marcada como somente leitura (write=False).
+    """
     a = np.asarray(arr, dtype=np.float64)
     if a.ndim != 2:
         raise SchemaError(f"{name} deve ser 2D, recebido shape {a.shape}")
@@ -46,7 +56,9 @@ def _as_2d_float64(arr: np.ndarray, name: str, expected_cols: int | None = None)
         raise SchemaError(f"{name} deve ter {expected_cols} colunas, recebido {a.shape[1]}")
     if not np.all(np.isfinite(a)):
         raise SchemaError(f"{name} contém NaN ou Inf")
-    return a.copy()
+    out = a.copy()
+    out.setflags(write=False)
+    return out
 
 
 @dataclass(frozen=True)
@@ -77,7 +89,7 @@ class GroundTruth:
     source: str
 
     def __post_init__(self) -> None:
-        # Validação e normalização (cópias defensivas)
+        # Validação e normalização (cópias defensivas somente leitura)
         object.__setattr__(self, "t", _as_1d_float64(self.t, "t"))
         object.__setattr__(self, "pos", _as_2d_float64(self.pos, "pos", expected_cols=2))
         object.__setattr__(self, "yaw", _as_1d_float64(self.yaw, "yaw"))
@@ -112,7 +124,7 @@ class GroundTruth:
         return int(self.t.shape[0])
 
     def copy(self) -> "GroundTruth":
-        """Retorna cópia profunda (arrays novos)."""
+        """Retorna cópia profunda (arrays novos, também write=False)."""
         return GroundTruth(
             t=self.t.copy(),
             pos=self.pos.copy(),
@@ -178,9 +190,13 @@ class Measurement:
                 f"R não é semidefinida positiva (min eig={float(eig.min()):.3e})"
             )
 
-        # Armazena cópias
-        object.__setattr__(self, "z", z.copy())
-        object.__setattr__(self, "R", R.copy())
+        # Armazena cópias somente leitura
+        z_out = z.copy()
+        z_out.setflags(write=False)
+        R_out = R.copy()
+        R_out.setflags(write=False)
+        object.__setattr__(self, "z", z_out)
+        object.__setattr__(self, "R", R_out)
         object.__setattr__(self, "sensor", self.sensor.strip())
 
 
