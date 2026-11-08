@@ -88,7 +88,7 @@ ruff check roboqa tests --output-format=full
 python -m compileall -q roboqa tests
 ```
 
-Do not mark Phase 4.4-A validated until the actual outputs are reviewed.
+Historical pre-validation instruction: superseded by the validation evidence recorded below.
 
 
 ## Validation evidence — 2026-11-08
