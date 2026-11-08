@@ -6,7 +6,7 @@
 
 RoboQA Lab não é apenas uma demonstração de EKF. O objetivo é construir uma plataforma de engenharia para testar, observar e avaliar pipelines de percepção/estimação sensorial sob dados normais, falhas controladas e condições temporais adversas.
 
-> **Status do projeto:** implementação em andamento — base validada até a **Fase 4.0**; implementação da **Fase 4.1 em validação manual**. O produto completo ainda não está concluído.
+> **Status do projeto:** implementação em andamento — base validada até a **Fase 4.1**; implementação da **Fase 4.2 em validação manual**. O produto completo ainda não está concluído.
 
 ## Visão da plataforma
 
@@ -38,8 +38,9 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 2.2 | Fusion Engine — CTRV + EKF hardening | **VALIDATED** |
 | 3.1–3.3-E | Fault Injection, temporal pipeline, campanhas e integração | **VALIDATED** |
 | 4.0 | Quality Contracts | **VALIDATED** |
-| 4.1 | Fusion Telemetry | **IMPLEMENTED — COLAB VALIDATION PENDING** |
-| 4.2–4.3 | Quality Metrics Engine + Deterministic Quality Gate | PLANNED |
+| 4.1 | Fusion Telemetry | **VALIDATED — 94% FUSION COVERAGE** |
+| 4.2 | Quality Metrics Engine | **IMPLEMENTED — COLAB VALIDATION PENDING** |
+| 4.3 | Deterministic Quality Gate | PLANNED |
 | 4.4 | ML Intelligence | PLANNED |
 | 4.5 | Fault-to-QA Integration | PLANNED |
 | 4.6 | Streamlit Control Center | PLANNED |
@@ -85,6 +86,15 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 
 **Nota semântica:** campanhas sobrepostas usam composição serial determinística; não representam execução paralela por threads ou workers assíncronos.
 
+### Quality Metrics Engine — Fase 4.2 (validação pendente)
+
+- RMSE com GroundTruth explícito, interpolação e tolerância de alinhamento.
+- NIS médio e norma da inovação por sensor.
+- Disponibilidade baseada em contagem esperada explícita.
+- Latências de transporte, processamento e ponta a ponta usando os três relógios.
+- Média do traço da covariância e taxa de rejeição temporal.
+- Métricas ausentes/inválidas permanecem explicitamente classificadas; não são convertidas em zero.
+
 ### Quality Contracts — Fase 4.0
 
 - `MetricObservation`: valor, unidade, escopo, amostras e disponibilidade explícita.
@@ -93,16 +103,15 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Estados de decisão definidos: `PASS`, `PASS_WITH_WARNINGS`, `FAIL`, `BLOCKED`.
 - Validação de escopos, valores finitos, identidades únicas e proveniência.
 
-**Limite:** a Phase 4.1 expõe telemetria; agregação de métricas, limiares estatísticos, Quality Gate e ML ainda não foram implementados.
+**Limite:** a Phase 4.2 calcula métricas, mas não aplica limiares estatísticos nem emite decisões PASS/FAIL. O Quality Gate e ML ainda não foram implementados.
 
 ## Próximas etapas
 
-1. **4.1 — Fusion Telemetry:** validar no Colab e fechar os contratos de evidência por atualização.
-2. **4.2 — Quality Metrics:** agregar NIS, inovação, RMSE (quando houver ground truth alinhado), disponibilidade e latências.
-3. **4.3 — Deterministic Quality Gate:** decisões auditáveis com bloqueio quando faltar evidência obrigatória.
-4. **4.4 — ML Intelligence:** detecção de anomalias consultiva, após validação dos dados e métricas.
-5. **4.5 — Fault-to-QA Integration:** avaliar os efeitos das falhas no pipeline completo.
-6. **4.6 — Streamlit Control Center:** interface operacional de experimentos, telemetria e relatórios.
+1. **4.2 — Quality Metrics:** validar no Colab, fechar semântica e cobertura das métricas.
+2. **4.3 — Deterministic Quality Gate:** decisões auditáveis com bloqueio quando faltar evidência obrigatória.
+3. **4.4 — ML Intelligence:** detecção de anomalias consultiva, após validação dos dados e métricas.
+4. **4.5 — Fault-to-QA Integration:** avaliar os efeitos das falhas no pipeline completo.
+5. **4.6 — Streamlit Control Center:** interface operacional de experimentos, telemetria e relatórios.
 
 ## Validação e desenvolvimento
 
@@ -113,7 +122,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Sem GitHub Actions como autoridade de validação.
 - Sem treinamento, downloads automáticos de datasets/pesos ou builds pesados antes da auditoria e dos gates pertinentes.
 
-A implementação da Phase 4.1 está no branch de trabalho e aguarda evidência de execução manual no Colab. Não considerar a fase validada antes de compileall, Ruff, testes direcionados, suíte completa e cobertura serem executados e registrados.
+A Phase 4.1 foi validada manualmente no Colab (suíte completa aprovada, Ruff limpo e 94% de cobertura no Fusion Engine). A Phase 4.2 está implementada em branch isolada e aguarda validação manual antes de ser considerada concluída.
 
 ## Governança e integridade
 
