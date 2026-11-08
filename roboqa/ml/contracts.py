@@ -179,11 +179,20 @@ class FeatureDataset:
 
         run_splits: dict[str, DatasetSplit] = {}
         feature_schema: dict[str, str] = {}
+        expected_names: set[str] | None = None
         for sample in samples:
             previous_split = run_splits.setdefault(sample.run_id, sample.split)
             if previous_split is not sample.split:
                 raise FeatureDatasetError(
                     f"run_id {sample.run_id!r} appears in multiple dataset splits"
+                )
+            sample_names = {feature.name for feature in sample.features}
+            if expected_names is None:
+                expected_names = sample_names
+            elif sample_names != expected_names:
+                raise FeatureDatasetError(
+                    "all samples must contain the same feature names; use MISSING "
+                    "or INVALID availability instead of omitting a feature"
                 )
             for feature in sample.features:
                 previous_unit = feature_schema.setdefault(feature.name, feature.unit)
