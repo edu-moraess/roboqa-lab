@@ -481,3 +481,41 @@ Phase 4.5-D should specify and test the Fusion scheduling boundary explicitly: w
 
 - **D2 — Fusion execution record:** execute the immutable schedule through the existing Fusion runner and associate source identities with telemetry or explicit execution outcomes.
 - **D3 — QA evidence propagation:** propagate replay and execution evidence into Quality Metrics and deterministic Quality Gate, preserving the Gate as the sole decision authority.
+
+
+---
+
+## 21. Engineering addendum — Phase 4.5-D2 identity-preserving Fusion execution validation (2026-11-08)
+
+### Phase 4.5-D2 — FULL VALIDATION PASS
+
+- Branch: `feat/fusion-execution-phase-4-5d2`.
+- Validated production-code checkpoint: `43de077cf01b16c3114d5f7dfeeeaf53a6d2057d`.
+- Base: Phase 4.5-D1 validated checkpoint `98aa80b857bb8fc9ee6061495ffad22c2929f4da`.
+- PR #18: https://github.com/edu-moraess/roboqa-lab/pull/18 — remains Draft, open, and unmerged; targets `feat/fusion-scheduling-phase-4-5d1`, not `main`.
+- Manual Colab targeted tests across D2 execution, D1 scheduling, and Measurement adapter: **32 passed**.
+- Full `python -m pytest -q`: reached 100%, exit code **0**, no failures reported. The captured output did not expose an unambiguous aggregate test count; no total is inferred.
+- Full `ruff check roboqa tests`: **All checks passed!**
+- Full `python -m compileall -q roboqa tests`: exit code **0**.
+- The initial targeted Ruff run identified only import ordering in `roboqa/integration/__init__.py`; it was corrected in commit `43de077cf01b16c3114d5f7dfeeeaf53a6d2057d`. Targeted Ruff and compileall then passed, followed by all full-repository checks.
+- Result: **FULL VALIDATION PASS** for identity-preserving Fusion schedule execution and repository compatibility.
+
+### Implemented behavior
+
+- Executes the immutable D1 acquisition-time schedule through the existing monotonic Fusion runner.
+- Produces exactly one terminal outcome per replay-accepted identity: `UPDATED`, `FAILED`, or `NOT_EXECUTED`.
+- Associates successful `InnovationTelemetry` with the exact sensor/source/sequence identity and acquisition timestamp.
+- Preserves the complete transport replay summary, runner diagnostics, configuration, state/covariance/time traces, and deterministic execution SHA-256.
+- Attributes the first numerical update failure to the failing scheduled item and marks remaining entries `NOT_EXECUTED`. Invalid run configuration does not incorrectly blame an individual measurement.
+- Retains the native `FilterResult` for downstream metrics.
+
+### Explicit limitations
+
+- D2 does not modify EKF mathematics, `run_filter` ordering policy, Quality Metrics, or Quality Gate.
+- It does not implement online arrival-order execution, rewind, fixed-lag smoothing, or a live scheduler.
+- Duplicate, late, invalid, and dropped packet dispositions remain in the attached replay summary; execution outcomes apply only to replay-accepted schedule entries.
+- No ML training/inference, dataset downloads, Streamlit, CI/GitHub Actions, merge, or changes to `main` were performed.
+
+### Next engineering checkpoint — Phase 4.5-D3
+
+Propagate replay and execution evidence into Quality Metrics and the deterministic Quality Gate. Define how non-accepted transport dispositions, failed updates, and not-executed measurements affect availability, rejection, latency, and evidence completeness. Missing evidence must remain explicit; the Quality Gate remains the sole decision authority.
