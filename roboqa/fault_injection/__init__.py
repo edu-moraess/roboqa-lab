@@ -3,7 +3,9 @@ from roboqa.fault_injection.contracts import (
     ContractError, FaultEvent, FaultOperator, FaultResult, FaultScenario,
     FaultStatus, FaultType, RecoveryRecord, RecoveryStatus,
 )
-from roboqa.fault_injection.engine import FaultExecution, FaultInjectionEngine
+from roboqa.fault_injection.engine import (
+    FaultCampaignExecution, FaultExecution, FaultInjectionEngine,
+)
 from roboqa.fault_injection.envelopes import RawMeasurementEnvelope
 from roboqa.fault_injection.operators import (
     ArrivalShiftOperator, BiasOperator, DelayOperator, DropoutOperator,
@@ -18,7 +20,7 @@ from roboqa.fault_injection.provenance import (
 __all__ = [
     "ContractError", "FaultEvent", "FaultOperator", "FaultResult", "FaultScenario",
     "FaultStatus", "FaultType", "RecoveryRecord", "RecoveryStatus",
-    "FaultExecution", "FaultInjectionEngine", "RawMeasurementEnvelope",
+    "FaultCampaignExecution", "FaultExecution", "FaultInjectionEngine", "RawMeasurementEnvelope",
     "ArrivalShiftOperator", "BiasOperator", "DelayOperator", "DropoutOperator",
     "DuplicateOperator", "EnvelopeFaultOperator", "InvalidPayloadOperator",
     "OutlierOperator", "PacketLossOperator", "FaultProvenance",
