@@ -630,7 +630,7 @@ Proceed to Phase 4.4-C: implement an explicit statistical anomaly baseline and a
 
 ## 25. Engineering checkpoint — Phase 4.4-C advisory anomaly baselines (2026-11-08)
 
-### Scope implemented; manual validation pending
+### Scope implemented; full validation PASS
 
 - Branch: `feat/ml-anomaly-baselines-phase-4-4c`.
 - Base: Phase 4.4-B validated/documented branch checkpoint `7806310c6b0ef118dd94da0f39dce47d27bac5c1`.
@@ -642,7 +642,7 @@ Proceed to Phase 4.4-C: implement an explicit statistical anomaly baseline and a
 - Provenance: training data hash binds selected TRAIN identities and feature values; model hash binds training hash, transform, and parameters.
 - Advisory outputs NORMAL/ANOMALOUS/UNSCORABLE are not Quality Gate decisions. No Gate integration or decision authority was added.
 - Optional install: `pip install -e ".[ml]"` for Isolation Forest. Core imports do not require scikit-learn.
-- Validation status: **PENDING MANUAL COLAB**. Do not treat this phase as validated until targeted tests, full pytest, Ruff, and compileall pass on the exact synchronized commit.
+- Validation status was pending at the initial implementation checkpoint. Final validation evidence is recorded in Section 26 below.
 - No GitHub Actions validation, no merge, and no changes to `main`.
 
 ### Validation checklist
@@ -653,3 +653,37 @@ ruff check roboqa tests
 python -m compileall -q roboqa tests
 python -m pytest -q
 ```
+
+
+---
+
+## 26. Engineering addendum — Phase 4.4-C anomaly baseline validation (2026-11-08)
+
+### Phase 4.4-C — FULL VALIDATION PASS
+
+- Branch: `feat/ml-anomaly-baselines-phase-4-4c`.
+- Validated code checkpoint: `5ef68f3ea645e30bef4cd470ddc9f822d2473e18`.
+- Base: Phase 4.4-B validated checkpoint `7806310c6b0ef118dd94da0f39dce47d27bac5c1`.
+- PR #21: https://github.com/edu-moraess/roboqa-lab/pull/21 — remains Draft, open, and unmerged; base is `feat/ml-feature-engineering-phase-4-4b`, not `main`.
+- Targeted anomaly, feature-engineering, and dataset-contract tests: **57 passed**.
+- Isolation Forest optional path was exercised with scikit-learn **1.6.1**; its tests were not skipped.
+- Full `python -m pytest -q`: reached 100%, exit code **0**, no failures reported. The captured output did not expose an unambiguous aggregate test count; no total is inferred.
+- Full `ruff check roboqa tests`: **PASS**.
+- Full `python -m compileall -q roboqa tests`: exit code **0**.
+- Synchronization verified the exact remote and local HEAD `5ef68f3ea645e30bef4cd470ddc9f822d2473e18`. The only pre-existing local status entries were untracked generated artifacts (`.coverage`, `__pycache__`, and `roboqa_lab.egg-info`); they were preserved and not committed.
+- Result: **FULL VALIDATION PASS**, based on manual Google Colab output. No GitHub Actions validation is claimed.
+
+### Implemented model behavior and controls
+
+- Robust statistical baseline uses TRAIN-only median/MAD scaling, IQR/standard-deviation fallback, constant-feature exclusion, maximum absolute robust z-score, and a TRAIN empirical quantile threshold.
+- Optional Isolation Forest uses TRAIN-only fit, explicit contamination/random state/estimator count, and the same TRAIN-derived feature transform. The tested runtime used scikit-learn 1.6.1.
+- VALIDATION and TEST rows are scoring-only. Feature eligibility, medians, scales, and statistical threshold are not derived from them.
+- Reference labels are excluded from model inputs and fitting/scoring logic.
+- Missing required features and feature-unit mismatches produce explicit UNSCORABLE predictions; no imputation or silent unit conversion occurs.
+- Training-data and model hashes preserve the selected training evidence and model configuration.
+- NORMAL/ANOMALOUS/UNSCORABLE are advisory detector outputs, not Quality Gate decisions. The deterministic Quality Gate remains the sole decision authority.
+
+### Scope boundaries
+
+- No Quality Gate integration or policy changes, no training of a downstream supervised model, no external dataset/model downloads, no Streamlit work, and no online inference service.
+- No merge or changes to `main`.
