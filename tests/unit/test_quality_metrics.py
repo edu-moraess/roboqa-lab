@@ -122,3 +122,12 @@ def test_invalid_result_shape_fails_closed():
     result.P = np.zeros((1, 5, 5))
     with pytest.raises(QualityMetricError):
         compute_quality_metrics(result)
+
+
+def test_covariance_trace_is_invalid_for_non_psd_snapshots():
+    result = _result()
+    result.P[0, 0, 0] = -10.0
+    metrics = compute_quality_metrics(result)
+    covariance = next(m for m in metrics if m.name == "covariance_trace_mean")
+    assert covariance.availability is MetricAvailability.INVALID
+    assert covariance.value is None
