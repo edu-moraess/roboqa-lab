@@ -12,7 +12,11 @@ import numpy as np
 
 from roboqa.fusion.result import FilterResult, FilterStatus, InnovationTelemetry
 from roboqa.fusion.runner import run_filter
-from roboqa.integration.contracts import EnvelopeIdentity
+from roboqa.integration.contracts import (
+    DeliveryDisposition,
+    EnvelopeIdentity,
+    TransportReplaySummary,
+)
 from roboqa.integration.scheduler import FusionSchedule
 
 
@@ -80,6 +84,10 @@ def _record_document(
     run_id: str,
     schedule_hash: str,
     filter_status: FilterStatus,
+    replay_summary: TransportReplaySummary,
+    n_predict: int,
+    n_update: int,
+    n_rejected: int,
     outcomes: tuple[MeasurementExecutionOutcome, ...],
     errors: tuple[str, ...],
     warnings: tuple[str, ...],
@@ -92,6 +100,35 @@ def _record_document(
         "run_id": run_id,
         "schedule_hash": schedule_hash,
         "filter_status": filter_status.value,
+        "replay_summary": {
+            "ordering_policy": replay_summary.ordering_policy.value,
+            "source_count": replay_summary.source_count,
+            "delivered_count": replay_summary.delivered_count,
+            "accepted_count": replay_summary.accepted_count,
+            "duplicate_count": replay_summary.duplicate_count,
+            "late_count": replay_summary.late_count,
+            "invalid_count": replay_summary.invalid_count,
+            "dropped_count": replay_summary.dropped_count,
+            "source_hash": replay_summary.source_hash,
+            "delivered_hash": replay_summary.delivered_hash,
+            "configuration_hash": replay_summary.configuration_hash,
+            "decisions": [
+                {
+                    "sensor_id": item.identity.sensor_id,
+                    "source_id": item.identity.source_id,
+                    "sequence_number": item.identity.sequence_number,
+                    "disposition": item.disposition.value,
+                    "acquisition_time": item.acquisition_time,
+                    "arrival_time": item.arrival_time,
+                    "processing_time": item.processing_time,
+                    "reason": item.reason,
+                }
+                for item in replay_summary.decisions
+            ],
+        },
+        "n_predict": n_predict,
+        "n_update": n_update,
+        "n_rejected": n_rejected,
         "outcomes": [
             {
                 "sensor_id": item.identity.sensor_id,
@@ -124,6 +161,10 @@ class FusionExecutionRecord:
     run_id: str
     schedule_hash: str
     filter_status: FilterStatus
+    replay_summary: TransportReplaySummary
+    n_predict: int
+    n_update: int
+    n_rejected: int
     outcomes: tuple[MeasurementExecutionOutcome, ...]
     errors: tuple[str, ...]
     warnings: tuple[str, ...]
@@ -140,6 +181,14 @@ class FusionExecutionRecord:
             raise FusionExecutionError("schedule_hash must be a SHA-256 digest")
         if not isinstance(self.filter_status, FilterStatus):
             raise FusionExecutionError("filter_status must be a FilterStatus")
+        if not isinstance(self.replay_summary, TransportReplaySummary):
+            raise FusionExecutionError("replay_summary must be a TransportReplaySummary")
+        if self.replay_summary.run_id != self.run_id:
+            raise FusionExecutionError("replay summary run_id does not match execution run_id")
+        for name in ("n_predict", "n_update", "n_rejected"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise FusionExecutionError(f"{name} must be a non-negative integer")
         outcomes = tuple(self.outcomes)
         if any(not isinstance(item, MeasurementExecutionOutcome) for item in outcomes):
             raise FusionExecutionError("outcomes must contain MeasurementExecutionOutcome")
@@ -183,6 +232,12 @@ class FusionExecutionRecord:
         pending = sum(item.disposition is ExecutionDisposition.NOT_EXECUTED for item in outcomes)
         if expected + failed + pending != len(outcomes):
             raise FusionExecutionError("execution outcome accounting is inconsistent")
+        if len(outcomes) != self.replay_summary.accepted_count:
+            raise FusionExecutionError("outcomes must account for every replay-accepted packet")
+        if self.n_update != expected:
+            raise FusionExecutionError("n_update must match UPDATED outcome count")
+        if self.n_rejected:
+            raise FusionExecutionError("scheduled execution cannot contain runner rejections")
         digest = self.compute_hash()
         if self.execution_hash != digest:
             raise FusionExecutionError("execution_hash does not match execution evidence")
@@ -204,6 +259,10 @@ class FusionExecutionRecord:
             run_id=self.run_id,
             schedule_hash=self.schedule_hash,
             filter_status=self.filter_status,
+            replay_summary=self.replay_summary,
+            n_predict=self.n_predict,
+            n_update=self.n_update,
+            n_rejected=self.n_rejected,
             outcomes=self.outcomes,
             errors=self.errors,
             warnings=self.warnings,
@@ -291,8 +350,12 @@ def execute_fusion_schedule(
 
         if (
             index == len(telemetry)
-            and result.status is FilterStatus.NUMERICAL_FAILURE
+            and result.status in (FilterStatus.NUMERICAL_FAILURE, FilterStatus.INVALID_INPUT)
             and result.diagnostics.errors
+            and (
+                result.status is FilterStatus.NUMERICAL_FAILURE
+                or len(telemetry) > 0
+            )
         ):
             disposition = ExecutionDisposition.FAILED
             reason = result.diagnostics.errors[0]
@@ -317,9 +380,7 @@ def execute_fusion_schedule(
     )
     time_trace = tuple(float(x) for x in result.t)
     configuration = tuple(sorted({
-        "sigma_a": float(sigma_a),
-        "sigma_alpha": float(sigma_alpha),
-        "t0": None if t0 is None else float(t0),
+        **result.config,
         "schedule_policy": schedule.policy.value,
     }.items()))
     # Compute the canonical digest before constructing the self-validating record.
@@ -327,6 +388,10 @@ def execute_fusion_schedule(
         run_id=schedule.run_id,
         schedule_hash=schedule.schedule_hash,
         filter_status=result.status,
+        replay_summary=schedule.replay_summary,
+        n_predict=result.diagnostics.n_predict,
+        n_update=result.diagnostics.n_update,
+        n_rejected=result.diagnostics.n_rejected,
         outcomes=tuple(outcomes),
         errors=errors,
         warnings=warnings,
@@ -343,6 +408,10 @@ def execute_fusion_schedule(
         run_id=schedule.run_id,
         schedule_hash=schedule.schedule_hash,
         filter_status=result.status,
+        replay_summary=schedule.replay_summary,
+        n_predict=result.diagnostics.n_predict,
+        n_update=result.diagnostics.n_update,
+        n_rejected=result.diagnostics.n_rejected,
         outcomes=tuple(outcomes),
         errors=errors,
         warnings=warnings,
