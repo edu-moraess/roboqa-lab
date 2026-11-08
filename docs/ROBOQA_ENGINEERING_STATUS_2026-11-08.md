@@ -150,3 +150,34 @@ Preserve existing EKF result compatibility, validate singular/ill-conditioned co
 ## 8. Current conclusion
 
 The project has a substantial validated foundation through Phase 4.0, but the end-to-end product is not complete. Fusion telemetry, metric calculation, deterministic quality evaluation, ML advisory analysis, and the Streamlit Control Center remain future work. The next work session should begin with a read-only inspection of the Phase 4.0 branch and then implement Phase 4.1 in a new branch based on the validated checkpoint.
+
+
+---
+
+## 9. Engineering addendum — Phase 4.1 and Phase 4.2 (2026-11-08)
+
+This addendum supersedes the earlier "next step — Phase 4.1" wording in the historical snapshot above.
+
+### Phase 4.1 — Fusion Telemetry
+
+- Branch: `feat/fusion-telemetry-phase-4-1`
+- Validated HEAD: `5640bf5404eebc0ab2c22445c9efb0ed1f877f8c`
+- PR #10: https://github.com/edu-moraess/roboqa-lab/pull/10
+- Manual Colab evidence supplied: compileall PASS; Ruff PASS; telemetry tests 14 passed; EKF/runner tests 51 passed; integration tests 3 passed; complete suite 378 passed; Fusion Engine branch coverage 94%.
+- Result: **VALIDATION PASS**. PR remains separate and unmerged.
+
+### Phase 4.2 — Quality Metrics Engine
+
+- Branch: `feat/quality-metrics-phase-4-2`
+- Base: validated Phase 4.1 HEAD above.
+- PR #11: https://github.com/edu-moraess/roboqa-lab/pull/11
+- Current implementation HEAD at time of addendum: `f722183436f3954a4733f9278cd497731f429b0b`
+- Implemented calculations: position RMSE (explicit aligned GroundTruth), mean covariance trace, per-sensor innovation norm and NIS means, sensor update availability (explicit expected counts), three-clock latency means, and temporal rejection rate.
+- Missing and invalid evidence are represented using existing MetricAvailability states; no absent evidence is silently converted to zero.
+- Current runner does not expose a complete rejected-measurement ledger. The metric is therefore explicitly named temporal_rejection_rate and does not claim to be a general update rejection rate.
+- Availability is accepted-update ratio, not physical sensor uptime.
+- Validation: **PENDING MANUAL COLAB**. No test, Ruff, compile, or coverage result is claimed for Phase 4.2 yet.
+
+### Next step
+
+Run the documented Phase 4.2 Colab validation. Fix any evidence-backed failures before marking the phase validated. Phase 4.3 Quality Gate remains out of scope until Phase 4.2 passes.
