@@ -6,7 +6,7 @@
 
 RoboQA Lab não é apenas uma demonstração de EKF. O objetivo é construir uma plataforma de engenharia para testar, observar e avaliar pipelines de percepção/estimação sensorial sob dados normais, falhas controladas e condições temporais adversas.
 
-> **Status do projeto:** implementação em andamento — Fases 1, 2.2, 3.1–3.3-E, 4.0, 4.1 e 4.2 validadas manualmente; Fase 4.3 também passou por pytest completo, Ruff e compileall no Colab. Fase 4.4-A está VALIDADA manualmente no Colab (30 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-A passou pela validação manual dos contratos de integração (52 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-B tem replay temporal determinístico VALIDADO manualmente no Colab (19 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-C tem adaptador estrito VALIDADO manualmente no Colab (10 testes direcionados, suíte completa, Ruff e compileall). O produto completo ainda não está concluído.
+> **Status do projeto:** implementação em andamento — Fases 1, 2.2, 3.1–3.3-E, 4.0, 4.1 e 4.2 validadas manualmente; Fase 4.3 também passou por pytest completo, Ruff e compileall no Colab. Fase 4.4-A está VALIDADA manualmente no Colab (30 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-A passou pela validação manual dos contratos de integração (52 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-B tem replay temporal determinístico VALIDADO manualmente no Colab (19 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-C tem adaptador estrito VALIDADO manualmente no Colab (10 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-D1 (15 testes direcionados) e D2 (32 testes direcionados; suíte completa, Ruff e compileall) também estão VALIDADA(S) manualmente. O produto completo ainda não está concluído.
 
 ## Visão da plataforma
 
@@ -46,6 +46,8 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 4.5-B | Deterministic transport replay, watermark, deduplication and packet accounting | **VALIDATED — 19 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-C | Strict Measurement adapter from accepted transport envelopes | **VALIDATED — 10 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-D1 | Deterministic event-time Fusion scheduling boundary | **VALIDATED — 15 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
+| 4.5-D2 | Identity-preserving execution through Fusion runner | **VALIDATED — 32 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
+| 4.5-D3 | Replay/execution evidence propagation into Quality Metrics and Gate | PLANNED |
 | 4.6 | Streamlit Control Center | PLANNED |
 
 ### Relatório consolidado
@@ -219,3 +221,16 @@ Phase 4.5-C was manually validated in Colab on code checkpoint `77f0e6e267f08f86
 - Manual Colab validation: **15 targeted tests passed**; full pytest completed at 100%, exit code 0; full Ruff passed; full compileall exit code 0. The full-suite output did not expose an aggregate test count, so none is inferred.
 - This is an offline batch schedule, not a live arrival-order scheduler. EKF and `run_filter` remain unchanged; no rewind/fixed-lag reprocessing is implemented.
 - Specification: [Phase 4.5-D1 — Deterministic Fusion Scheduling](docs/phase-4-5d1-fusion-scheduling-contract.md).
+
+
+### Phase 4.5-D2 — Identity-preserving Fusion execution (VALIDATED)
+
+- Executes the immutable D1 schedule through the existing monotonic Fusion runner.
+- Produces one terminal outcome per replay-accepted identity: UPDATED, FAILED, or NOT_EXECUTED.
+- Associates successful InnovationTelemetry with the exact sensor/source/sequence identity and acquisition timestamp.
+- Preserves the complete transport replay summary, runner diagnostics, configuration, state/covariance/time traces, and deterministic execution SHA-256.
+- Numerical update failure is attributed to the failing scheduled item; remaining entries are explicitly NOT_EXECUTED. Invalid run configuration does not blame an individual measurement.
+- No EKF mathematics, runner policy, Quality Metrics, or Quality Gate behavior was changed.
+- Manual Colab validation: **32 targeted tests passed** across execution, scheduling, and adapter; full pytest reached 100% with exit code 0; full Ruff passed; full compileall exited 0. The full-suite output did not expose an unambiguous aggregate count.
+- Validated branch checkpoint: `43de077cf01b16c3114d5f7dfeeeaf53a6d2057d`; subsequent changes in this documentation checkpoint do not alter production code.
+- Specification: [Phase 4.5-D2 — Identity-preserving Fusion execution](docs/phase-4-5d2-identity-preserving-fusion-execution.md).
