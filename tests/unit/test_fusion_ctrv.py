@@ -123,7 +123,8 @@ def test_process_noise_Q_rotates_with_heading():
     assert Q_x[0, 0] > 0.0
     assert Q_y[1, 1] > 0.0
     assert abs(Q_y[0, 0]) < 1e-15
-    assert abs(Q_y[1, 3]) < 1e-15
+    assert abs(Q_y[0, 3]) < 1e-15
+    assert Q_y[1, 3] > 0.0
 
 
 def test_process_noise_Q_angular_cross_terms():
