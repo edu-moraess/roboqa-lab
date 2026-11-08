@@ -293,3 +293,42 @@ This addendum supersedes the earlier Phase 4.2 pending-validation statements in 
 ### Next engineering checkpoint
 
 Proceed to Phase 4.5-B with explicit replay semantics: define ordering, late packet/watermark policy, duplicate identity and suppression, dropped-packet accounting, three-clock propagation, and a tested adapter boundary before wiring faulted deliveries into Fusion. Preserve the deterministic Quality Gate as the sole decision authority.
+
+
+---
+
+## 15. Session checkpoint — 2026-11-08 06:34 UTC
+
+### Saved state
+
+- Repository: `edu-moraess/roboqa-lab`.
+- Working branch: `feat/fault-to-qa-contracts-phase-4-5a`.
+- Last verified GitHub branch HEAD at checkpoint preparation: `744ae3de152d4fd3e07e278e4104f6cc4809fb88`.
+- Branch comparison against `feat/ml-intelligence-contracts-phase-4-4a`: **11 commits ahead, 0 behind**.
+- PR #14: https://github.com/edu-moraess/roboqa-lab/pull/14 — open, Draft, unmerged; target remains `feat/ml-intelligence-contracts-phase-4-4a`.
+- PR remains deliberately unmerged. No changes to `main` were made.
+- The manual validation was run in Colab at code checkpoint `c7e5e3e04e575fab66267835c8a249bbe5273247`. Subsequent commits through `744ae3de...` are documentation and PR-record updates; no production-code changes followed the validated code checkpoint.
+- Colab's last reported local status contained only untracked generated artifacts (`.coverage`, `__pycache__`, and `roboqa_lab.egg-info`). They were not committed or deleted. On resumption, fast-forward the Colab branch from origin and verify HEAD before running more work.
+
+### Validated scope at pause
+
+Phase 4.5-A is **VALIDATION PASS** for immutable Fault-to-QA integration contracts and repository compatibility:
+- 52 targeted unit tests passed.
+- Full pytest suite completed at 100%, exit code 0 (aggregate count not inferred).
+- Full Ruff check passed.
+- Full compileall completed without errors.
+
+This does not establish a working transport replay engine, effective arrival-order scheduling, late-packet/watermark behavior, duplicate suppression, Measurement adapter, or end-to-end fault-to-fusion integration.
+
+### Exact continuation point — Phase 4.5-B
+
+Resume with a design/specification and tests-first checkpoint for a deterministic transport replay boundary. Resolve and document, before production implementation:
+1. Ordering semantics for ARRIVAL_ORDER versus ACQUISITION_ORDER and deterministic tie-breaking.
+2. Late-packet policy and watermark/finalization behavior.
+3. Duplicate identity scope and suppression semantics, including source_id/sequence collisions across sensors.
+4. Accounting invariants for accepted, duplicate, late, invalid, and dropped deliveries.
+5. Propagation and validation of acquisition_time, arrival_time, and processing_time.
+6. A controlled adapter boundary into normalized `Measurement`, without weakening its strict validation contract.
+7. Integration tests proving how the chosen replay policy affects Fusion telemetry, Quality Metrics, and the deterministic Quality Gate.
+
+Keep the deterministic Quality Gate as the sole decision authority. Do not begin ML model training, add CI/GitHub Actions, alter `main`, or merge PR #14 without explicit authorization.
