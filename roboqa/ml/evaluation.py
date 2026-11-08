@@ -235,9 +235,11 @@ class AnomalyEvaluationReport:
             slices = tuple(self.slices)
         except TypeError as exc:
             raise AnomalyEvaluationError("slices must be iterable") from exc
-        if not slices or any(
-            not isinstance(item, AnomalyEvaluationSlice) for item in slices
-        ):
+        if not slices:
+            raise AnomalyEvaluationError(
+                "report must contain exactly one overall evaluation slice"
+            )
+        if any(not isinstance(item, AnomalyEvaluationSlice) for item in slices):
             raise AnomalyEvaluationError(
                 "slices must contain AnomalyEvaluationSlice values"
             )
