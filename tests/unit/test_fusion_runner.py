@@ -110,3 +110,72 @@ def test_invalid_runner_process_noise_parameters(sigma_a, sigma_alpha):
     measurement = Measurement(t=0.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
     result = run_filter([measurement], sigma_a=sigma_a, sigma_alpha=sigma_alpha)
     assert result.status == FilterStatus.INVALID_INPUT
+
+def test_custom_initial_state_and_covariance_are_used():
+    measurement = Measurement(t=0.0, sensor="gps", z=np.array([2.0, 3.0]), R=np.eye(2))
+    x0 = np.array([1.0, -1.0, 0.2, 4.0, 0.1])
+    P0 = np.eye(5) * 2.0
+    result = run_filter([measurement], x0=x0, P0=P0)
+    assert result.status == FilterStatus.OK
+    np.testing.assert_array_equal(result.x[0], x0)
+    np.testing.assert_array_equal(result.P[0], P0)
+
+
+def test_invalid_custom_initial_shapes_return_invalid_input():
+    measurement = Measurement(t=0.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
+    result_x = run_filter([measurement], x0=np.zeros(4))
+    result_p = run_filter([measurement], P0=np.eye(4))
+    assert result_x.status == FilterStatus.INVALID_INPUT
+    assert result_p.status == FilterStatus.INVALID_INPUT
+    assert result_x.diagnostics.errors
+    assert result_p.diagnostics.errors
+
+
+def test_runner_reports_numerical_failure(monkeypatch):
+    from roboqa.fusion.ekf import EKFNumericalError
+
+    def fail_update(self, measurement):
+        raise EKFNumericalError("injected numerical failure")
+
+    monkeypatch.setattr("roboqa.fusion.runner.EKF.update", fail_update)
+    measurement = Measurement(t=0.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
+    result = run_filter([measurement])
+    assert result.status == FilterStatus.NUMERICAL_FAILURE
+    assert result.diagnostics.n_update == 0
+    assert "injected numerical failure" in result.diagnostics.errors[0]
+
+
+def test_runner_reports_schema_failure_during_update(monkeypatch):
+    from roboqa.data.schemas import SchemaError
+
+    def fail_update(self, measurement):
+        raise SchemaError("injected schema failure")
+
+    monkeypatch.setattr("roboqa.fusion.runner.EKF.update", fail_update)
+    measurement = Measurement(t=0.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
+    result = run_filter([measurement])
+    assert result.status == FilterStatus.INVALID_INPUT
+    assert result.diagnostics.n_update == 0
+    assert "injected schema failure" in result.diagnostics.errors[0]
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"gps_sigma": -1.0},
+        {"speed_sigma": np.nan},
+        {"yawrate_sigma": np.inf},
+    ],
+)
+def test_simulation_rejects_invalid_noise_parameters(kwargs):
+    gt = make_synthetic_ground_truth(n=3, dt=0.1, seed=1)
+    with pytest.raises(ValueError):
+        simulate_measurements(gt, **kwargs)
+
+
+@pytest.mark.parametrize("gps_every", [0, -1, 1.5])
+def test_simulation_rejects_invalid_gps_interval(gps_every):
+    gt = make_synthetic_ground_truth(n=3, dt=0.1, seed=1)
+    with pytest.raises(ValueError, match="gps_every"):
+        simulate_measurements(gt, gps_every=gps_every)
+
