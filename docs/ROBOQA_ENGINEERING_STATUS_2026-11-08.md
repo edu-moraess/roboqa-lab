@@ -332,3 +332,40 @@ Resume with a design/specification and tests-first checkpoint for a deterministi
 7. Integration tests proving how the chosen replay policy affects Fusion telemetry, Quality Metrics, and the deterministic Quality Gate.
 
 Keep the deterministic Quality Gate as the sole decision authority. Do not begin ML model training, add CI/GitHub Actions, alter `main`, or merge PR #14 without explicit authorization.
+
+
+---
+
+## 16. Engineering addendum — Phase 4.5-B deterministic transport replay (2026-11-08)
+
+### Implementation checkpoint — manual validation pending
+
+- Branch: `feat/temporal-replay-phase-4-5b`.
+- Base: Phase 4.5-A checkpoint `d4010790a4654d304a443aa7f5603af92b251926`.
+- PR #15 is intended to target `feat/fault-to-qa-contracts-phase-4-5a`, not `main`; it remains Draft pending manual Colab validation.
+- Added `roboqa.integration.replay_transport` and immutable `TransportReplayResult`.
+- Implemented deterministic ARRIVAL_ORDER and ACQUISITION_ORDER batch ordering, canonical tie-breaking, source-identity validation, first-delivery-wins duplicate suppression, acquisition-time watermark lateness for ARRIVAL_ORDER, invalid three-clock/payload classification, dropped-source accounting, and SHA-256 provenance.
+- Exported replay API from `roboqa.integration`.
+- Added focused unit/adversarial tests in `tests/unit/test_transport_replay.py` and normative specification in `docs/phase-4-5b-deterministic-transport-replay.md`.
+- README roadmap now distinguishes implemented-but-unvalidated Phase 4.5-B from the planned adapter and end-to-end phases.
+- **Validation status: PENDING MANUAL COLAB.** No pytest, Ruff, compileall, coverage, or runtime PASS is claimed for this branch yet.
+
+### Normative semantics
+
+- Identity: normalized `(sensor_id, source_id, sequence_number)`; duplicate source identities are rejected.
+- ARRIVAL_ORDER sorts by arrival time and uses `watermark = max_acquisition_seen - allowed_lateness_s`; first-seen event time strictly below the watermark is LATE. Equality is accepted.
+- ACQUISITION_ORDER is a deterministic offline event-time sort and does not classify late packets.
+- Deterministic ties use normalized sensor, source ID, sequence, and canonical envelope fingerprint.
+- First delivery wins; subsequent same-identity copies are DUPLICATE, even if the first copy was INVALID or LATE.
+- Invalid non-finite clocks/payload, arrival before acquisition, or processing before arrival are classified INVALID without mutating the raw envelope.
+- Source packets absent from delivered batch are DROPPED with arrival/processing set to None.
+- Accounting: delivered = accepted + duplicate + late + invalid; source = accepted + late + invalid + dropped.
+- This is offline batch replay only. It does not create a live streaming watermark or invoke Fusion.
+
+### Important integration boundary
+
+The existing `run_filter` still sorts normalized `Measurement.t`. The new ARRIVAL_ORDER replay output is not proof that Fusion processes in arrival order. The adapter and Fusion scheduling boundary remain a separate Phase 4.5-C/D task. The strict normalized `Measurement` schema and deterministic Quality Gate remain unchanged.
+
+### Manual Colab gate
+
+Run targeted replay tests, targeted Ruff and compileall, then full pytest, full Ruff, and full compileall. Keep PR #15 Draft until the actual outputs are reviewed. Do not infer test totals or coverage percentages.
