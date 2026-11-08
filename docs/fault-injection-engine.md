@@ -65,11 +65,14 @@ inspectable. temporal_order_valid currently checks that a present processing
 timestamp does not precede arrival; it does not reject the envelope.
 
 A non-finite processing timestamp is preserved for diagnostics and causes
-timestamps_finite / is_valid_candidate to report false. The execution engine
-includes processing time in canonical envelope hashes and copies it into
-FaultEvent.processing_time, so provenance and event records cover all three
-clocks. This phase defines metadata and diagnostics only: it does not add a
-scheduler, buffering policy, processing simulator, or clock-domain conversion.
+processing_timestamp_finite / is_valid_candidate to report false; the existing
+timestamps_finite property retains its Phase 3.2 meaning and checks acquisition
+and arrival only. Such an envelope remains eligible for transport fault
+injection when its acquisition and arrival timestamps are finite. The raw
+processing timestamp participates in canonical envelope hashes, while the
+normalized FaultEvent omits a non-finite processing timestamp. This phase
+defines metadata and diagnostics only: it does not add a scheduler, buffering
+policy, processing simulator, or clock-domain conversion.
 
 ## Campaign orchestration
 
