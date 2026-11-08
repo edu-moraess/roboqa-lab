@@ -75,7 +75,7 @@ def test_rejects_non_square_or_nonfinite_covariance(covariance):
 
 def test_rejects_covariance_that_is_not_positive_semidefinite():
     result = replay((envelope(1, "speed", 1.0, 1.1, (2.0,)),))
-    with pytest.raises(MeasurementAdapterError, match="not semidefinite positive"):
+    with pytest.raises(MeasurementAdapterError, match="semidefinida positiva"):
         adapt_accepted_envelopes(result, sensor_covariances={"speed": np.array([[-1.0]])})
 
 
