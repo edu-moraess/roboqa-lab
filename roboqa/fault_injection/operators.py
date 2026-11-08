@@ -343,6 +343,7 @@ class DuplicateOperator(_BaseOperator):
 DEFAULT_OPERATORS: tuple[EnvelopeFaultOperator, ...] = (
     DropoutOperator(),
     PacketLossOperator(),
+    BurstLossOperator(),
     DelayOperator(),
     ArrivalShiftOperator(),
     BiasOperator(),
