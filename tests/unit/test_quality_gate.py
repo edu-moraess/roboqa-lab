@@ -215,3 +215,52 @@ def test_unconfigured_metrics_are_preserved_but_not_thresholded():
     )
     assert report.decision is QualityDecision.PASS
     assert len(report.metrics) == 2
+
+@pytest.mark.parametrize("availability", [
+    MetricAvailability.MISSING,
+    MetricAvailability.INVALID,
+])
+def test_required_unavailable_metric_is_blocked(availability):
+    report = evaluate(
+        [metric(value=None, availability=availability)],
+        [MetricRule("rmse", "position_rmse", MetricScope.RUN)],
+    )
+    assert report.decision is QualityDecision.BLOCKED
+
+
+def test_warning_lower_bound_and_hard_lower_bound():
+    warning = evaluate(
+        [metric(value=0.1)],
+        [MetricRule("rmse", "position_rmse", MetricScope.RUN,
+                    minimum=0.0, warning_minimum=0.2)],
+    )
+    failed = evaluate(
+        [metric(value=-0.1)],
+        [MetricRule("rmse", "position_rmse", MetricScope.RUN, minimum=0.0)],
+    )
+    assert warning.decision is QualityDecision.PASS_WITH_WARNINGS
+    assert failed.decision is QualityDecision.FAIL
+
+
+def test_hard_and_warning_boundaries_are_inclusive():
+    report = evaluate(
+        [metric(value=1.0)],
+        [MetricRule("rmse", "position_rmse", MetricScope.RUN,
+                    minimum=0.0, maximum=1.0, warning_maximum=0.8)],
+    )
+    assert report.decision is QualityDecision.PASS
+
+
+def test_optional_unit_mismatch_is_warning():
+    report = evaluate(
+        [metric(value=0.5, unit="km")],
+        [MetricRule("rmse", "position_rmse", MetricScope.RUN,
+                    required=False, unit="m")],
+    )
+    assert report.decision is QualityDecision.PASS_WITH_WARNINGS
+
+
+def test_policy_rejects_non_iterable_rules():
+    with pytest.raises(QualityGateError):
+        QualityGatePolicy("v1", None)
+
