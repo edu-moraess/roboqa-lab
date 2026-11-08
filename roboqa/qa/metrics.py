@@ -82,6 +82,19 @@ def _latency_metric(name, envelopes, sensor_id, attribute):
     if not selected:
         return _metric(name, None, "s", MetricScope.SENSOR, 0,
                        MetricAvailability.MISSING, sensor_id=sensor_id)
+    clock_fields = {
+        "transport_latency_s": ("acquisition_time", "arrival_time"),
+        "processing_wait_s": ("arrival_time", "processing_time"),
+        "end_to_end_latency_s": ("acquisition_time", "processing_time"),
+    }[attribute]
+    if any(
+        getattr(item, field) is not None
+        and not isfinite(float(getattr(item, field)))
+        for item in selected
+        for field in clock_fields
+    ):
+        return _metric(name, None, "s", MetricScope.SENSOR, 0,
+                       MetricAvailability.INVALID, sensor_id=sensor_id)
     raw_values = [getattr(item, attribute) for item in selected]
     present = [value for value in raw_values if value is not None]
     if not present:
