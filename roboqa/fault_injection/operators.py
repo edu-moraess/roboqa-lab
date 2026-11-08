@@ -113,6 +113,7 @@ class DelayOperator(_BaseOperator):
             sequence_number=envelope.sequence_number,
             payload=envelope.payload,
             source_id=envelope.source_id,
+            processing_time=envelope.processing_time,
         ),)
 
 
