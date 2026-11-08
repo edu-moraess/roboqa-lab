@@ -29,6 +29,7 @@ from roboqa.ml.evaluation import (
     AnomalyEvaluationSlice,
     EvaluationScope,
 )
+from roboqa.ml.evaluation_engine import evaluate_anomaly_predictions
 from roboqa.ml.features import FeatureEngineeringError, extract_temporal_features
 
 __all__ = [
@@ -57,4 +58,5 @@ __all__ = [
     "score_isolation_forest",
     "score_statistical_baseline",
     "extract_temporal_features",
+    "evaluate_anomaly_predictions",
 ]
