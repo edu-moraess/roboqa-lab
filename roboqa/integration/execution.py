@@ -291,7 +291,7 @@ def execute_fusion_schedule(
 
         if (
             index == len(telemetry)
-            and result.status in (FilterStatus.NUMERICAL_FAILURE, FilterStatus.INVALID_INPUT)
+            and result.status is FilterStatus.NUMERICAL_FAILURE
             and result.diagnostics.errors
         ):
             disposition = ExecutionDisposition.FAILED
@@ -322,7 +322,6 @@ def execute_fusion_schedule(
         "t0": None if t0 is None else float(t0),
         "schedule_policy": schedule.policy.value,
     }.items()))
-    provisional = FusionExecutionRecord.__new__(FusionExecutionRecord)
     # Compute the canonical digest before constructing the self-validating record.
     document = _record_document(
         run_id=schedule.run_id,
