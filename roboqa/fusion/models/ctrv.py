@@ -5,7 +5,6 @@ ARQTECH LABS
 
 State: [x, y, psi, v, omega]^T
 Units: m, m, rad, m/s, rad/s
-
 Angle convention: psi normalized to [-pi, pi).
 """
 
@@ -26,20 +25,26 @@ def normalize_angle(angle: float | np.ndarray) -> float | np.ndarray:
     return out
 
 
+def _validated_state_dt(x: np.ndarray, dt: float) -> tuple[np.ndarray, float]:
+    state = np.asarray(x, dtype=np.float64)
+    if state.shape != (5,):
+        raise ValueError(f"state must have shape (5,), got {state.shape}")
+    if not np.all(np.isfinite(state)):
+        raise ValueError("state must contain only finite values")
+    step = float(dt)
+    if not np.isfinite(step) or step < 0.0:
+        raise ValueError(f"dt must be finite and >= 0, got {dt}")
+    return state, step
+
+
 def ctrv_f(x: np.ndarray, dt: float) -> np.ndarray:
     """
     CTRV state transition.
 
     For |omega| > OMEGA_EPS uses the exact circular-arc formula.
-    For |omega| <= OMEGA_EPS uses a second-order Taylor expansion of the
-    circular formula about omega=0, so that f and its Jacobian are
-    consistent across the branch boundary.
+    Near zero turn rate, a second-order Taylor expansion avoids cancellation.
     """
-    x = np.asarray(x, dtype=np.float64).reshape(5)
-    dt = float(dt)
-    if dt < 0:
-        raise ValueError(f"dt must be >= 0, got {dt}")
-
+    x, dt = _validated_state_dt(x, dt)
     px, py, psi, v, omega = x
     psi = float(normalize_angle(psi))
 
@@ -47,24 +52,19 @@ def ctrv_f(x: np.ndarray, dt: float) -> np.ndarray:
         dpsi = omega * dt
         px_n = px + (v / omega) * (np.sin(psi + dpsi) - np.sin(psi))
         py_n = py + (v / omega) * (np.cos(psi) - np.cos(psi + dpsi))
-        psi_n = float(normalize_angle(psi + dpsi))
     else:
         s, c = np.sin(psi), np.cos(psi)
         px_n = px + v * dt * c - v * omega * (dt ** 2) / 2.0 * s
         py_n = py + v * dt * s + v * omega * (dt ** 2) / 2.0 * c
-        psi_n = float(normalize_angle(psi + omega * dt))
 
+    psi_n = float(normalize_angle(psi + omega * dt))
     return np.array([px_n, py_n, psi_n, v, omega], dtype=np.float64)
 
 
 def ctrv_jacobian(x: np.ndarray, dt: float) -> np.ndarray:
     """Analytic Jacobian F = df/dx matching ctrv_f branching."""
-    x = np.asarray(x, dtype=np.float64).reshape(5)
-    dt = float(dt)
-    if dt < 0:
-        raise ValueError(f"dt must be >= 0, got {dt}")
-
-    px, py, psi, v, omega = x
+    x, dt = _validated_state_dt(x, dt)
+    _, _, psi, v, omega = x
     psi = float(normalize_angle(psi))
     F = np.eye(5, dtype=np.float64)
 
@@ -98,40 +98,50 @@ def process_noise_Q(
     dt: float,
     sigma_a: float = 0.5,
     sigma_alpha: float = 0.1,
+    psi: float = 0.0,
 ) -> np.ndarray:
     """
-    Discrete process-noise covariance for CTRV.
+    Discrete process covariance for interval-constant random accelerations.
 
-    Stochastic model: continuous white noise on longitudinal acceleration
-    (sigma_a, m/s^2) and angular acceleration (sigma_alpha, rad/s^2).
+    Model: during one interval dt, longitudinal acceleration a and angular
+    acceleration alpha are independent, zero-mean random variables held
+    constant over that interval, with standard deviations sigma_a [m/s^2]
+    and sigma_alpha [rad/s^2]. The heading psi is the interval's initial
+    heading. This is a sampled/zero-order-hold model, NOT continuous white
+    acceleration noise.
 
-    Diagonal discretization:
-        Q_v   = sigma_a^2 * dt
-        Q_pos = sigma_a^2 * dt^3 / 3
-        Q_w   = sigma_alpha^2 * dt
-        Q_psi = sigma_alpha^2 * dt^3 / 3
+    With u=[cos(psi), sin(psi)], the acceleration-to-state map is:
+      delta_p = 0.5 * a * dt^2 * u; delta_v = a * dt
+      delta_psi = 0.5 * alpha * dt^2; delta_omega = alpha * dt
 
-    Cross-terms omitted to guarantee exact PSD under floating-point;
-    coupling enters via the state Jacobian F during prediction.
+    Q is B diag(sigma_a^2, sigma_alpha^2) B.T, so it is PSD by construction
+    (up to floating-point roundoff) and includes position/velocity and
+    heading/yaw-rate cross-covariances.
     """
     dt = float(dt)
-    if dt < 0:
-        raise ValueError(f"dt must be >= 0, got {dt}")
-    if dt == 0.0:
+    sigma_a = float(sigma_a)
+    sigma_alpha = float(sigma_alpha)
+    psi = float(psi)
+
+    if not np.isfinite(dt) or dt < 0.0:
+        raise ValueError(f"dt must be finite and >= 0, got {dt}")
+    if not np.isfinite(sigma_a) or sigma_a < 0.0:
+        raise ValueError("sigma_a must be finite and >= 0")
+    if not np.isfinite(sigma_alpha) or sigma_alpha < 0.0:
+        raise ValueError("sigma_alpha must be finite and >= 0")
+    if not np.isfinite(psi):
+        raise ValueError("psi must be finite")
+    if dt == 0.0 or (sigma_a == 0.0 and sigma_alpha == 0.0):
         return np.zeros((5, 5), dtype=np.float64)
 
-    sa2 = float(sigma_a) ** 2
-    sal2 = float(sigma_alpha) ** 2
+    c, s = np.cos(psi), np.sin(psi)
+    u = np.array([c, s], dtype=np.float64)
+    B = np.zeros((5, 2), dtype=np.float64)
+    B[0:2, 0] = 0.5 * (dt ** 2) * u
+    B[3, 0] = dt
+    B[2, 1] = 0.5 * (dt ** 2)
+    B[4, 1] = dt
 
-    q_v = sa2 * dt
-    q_pos = sa2 * (dt ** 3) / 3.0
-    q_w = sal2 * dt
-    q_psi = sal2 * (dt ** 3) / 3.0
-
-    Q = np.zeros((5, 5), dtype=np.float64)
-    Q[0, 0] = q_pos
-    Q[1, 1] = q_pos
-    Q[2, 2] = q_psi
-    Q[3, 3] = q_v
-    Q[4, 4] = q_w
-    return Q
+    variances = np.diag([sigma_a ** 2, sigma_alpha ** 2])
+    Q = B @ variances @ B.T
+    return 0.5 * (Q + Q.T)
