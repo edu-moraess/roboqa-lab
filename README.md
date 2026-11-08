@@ -6,7 +6,7 @@
 
 RoboQA Lab não é apenas uma demonstração de EKF. O objetivo é construir uma plataforma de engenharia para testar, observar e avaliar pipelines de percepção/estimação sensorial sob dados normais, falhas controladas e condições temporais adversas.
 
-> **Status do projeto:** implementação em andamento — base validada até a **Fase 4.1**; Fase 4.2 implementada; testes direcionados e cobertura de 100% em `metrics.py`; validação global pendente. O produto completo ainda não está concluído.
+> **Status do projeto:** implementação em andamento — base validada até a **Fase 4.1**; Fase 4.2 validada manualmente no Colab; implementação da Fase 4.3 em validação. O produto completo ainda não está concluído.
 
 ## Visão da plataforma
 
@@ -39,8 +39,8 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 3.1–3.3-E | Fault Injection, temporal pipeline, campanhas e integração | **VALIDATED** |
 | 4.0 | Quality Contracts | **VALIDATED** |
 | 4.1 | Fusion Telemetry | **VALIDATED — 94% FUSION COVERAGE** |
-| 4.2 | Quality Metrics Engine | **TARGETED COVERAGE 100% — FULL VALIDATION PENDING** |
-| 4.3 | Deterministic Quality Gate | PLANNED |
+| 4.2 | Quality Metrics Engine | **VALIDATED — FULL SUITE, RUFF, COMPILEALL; 100% TARGETED COVERAGE** |
+| 4.3 | Deterministic Quality Gate | **IMPLEMENTED — COLAB VALIDATION PENDING** |
 | 4.4 | ML Intelligence | PLANNED |
 | 4.5 | Fault-to-QA Integration | PLANNED |
 | 4.6 | Streamlit Control Center | PLANNED |
@@ -86,7 +86,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 
 **Nota semântica:** campanhas sobrepostas usam composição serial determinística; não representam execução paralela por threads ou workers assíncronos.
 
-### Quality Metrics Engine — Fase 4.2 (cobertura direcionada 100%; validação global pendente)
+### Quality Metrics Engine — Fase 4.2 (VALIDATED)
 
 - RMSE com GroundTruth explícito, interpolação e tolerância de alinhamento.
 - NIS médio e norma da inovação por sensor.
@@ -94,6 +94,15 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Latências de transporte, processamento e ponta a ponta usando os três relógios.
 - Média do traço da covariância e taxa de rejeição temporal.
 - Métricas ausentes/inválidas permanecem explicitamente classificadas; não são convertidas em zero.
+
+### Deterministic Quality Gate — Fase 4.3 (validação pendente)
+
+- Avaliação determinística de métricas por política versionada e explícita.
+- Regras identificam métrica, escopo, sensor/janela e unidade.
+- Limites rígidos geram FAIL; bandas de alerta geram PASS_WITH_WARNINGS.
+- Evidência obrigatória ausente, inválida ou com unidade incompatível gera BLOCKED.
+- Relatório imutável preserva métricas, findings, decisão, versão da política e hashes fornecidos.
+- Nenhum limiar universal é presumido; ML não participa da decisão.
 
 ### Quality Contracts — Fase 4.0
 
@@ -103,15 +112,14 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Estados de decisão definidos: `PASS`, `PASS_WITH_WARNINGS`, `FAIL`, `BLOCKED`.
 - Validação de escopos, valores finitos, identidades únicas e proveniência.
 
-**Limite:** a Phase 4.2 calcula métricas, mas não aplica limiares estatísticos nem emite decisões PASS/FAIL. O Quality Gate e ML ainda não foram implementados.
+**Limite:** a Phase 4.3 aplica somente regras explicitamente configuradas. Integração fault-to-QA, ML consultivo e Streamlit ainda não foram implementados.
 
 ## Próximas etapas
 
-1. **4.2 — Quality Metrics:** validar no Colab, fechar semântica e cobertura das métricas.
-2. **4.3 — Deterministic Quality Gate:** decisões auditáveis com bloqueio quando faltar evidência obrigatória.
-3. **4.4 — ML Intelligence:** detecção de anomalias consultiva, após validação dos dados e métricas.
-4. **4.5 — Fault-to-QA Integration:** avaliar os efeitos das falhas no pipeline completo.
-5. **4.6 — Streamlit Control Center:** interface operacional de experimentos, telemetria e relatórios.
+1. **4.3 — Deterministic Quality Gate:** validar no Colab e fechar a política de decisões auditáveis.
+2. **4.4 — ML Intelligence:** detecção de anomalias consultiva, após validação dos dados e métricas.
+3. **4.5 — Fault-to-QA Integration:** avaliar os efeitos das falhas no pipeline completo.
+4. **4.6 — Streamlit Control Center:** interface operacional de experimentos, telemetria e relatórios.
 
 ## Validação e desenvolvimento
 
@@ -122,7 +130,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Sem GitHub Actions como autoridade de validação.
 - Sem treinamento, downloads automáticos de datasets/pesos ou builds pesados antes da auditoria e dos gates pertinentes.
 
-A Phase 4.1 foi validada manualmente no Colab (suíte completa aprovada, Ruff limpo e 94% de cobertura no Fusion Engine). Na Phase 4.2, os testes direcionados de `metrics.py` alcançaram 100% de cobertura de statements e branches. A validação global da Phase 4.2 (suíte completa, Ruff e compileall) ainda está pendente.
+A Phase 4.1 foi validada manualmente no Colab (suíte completa aprovada, Ruff limpo e 94% de cobertura no Fusion Engine). A Phase 4.2 foi validada manualmente: suíte completa aprovada, Ruff limpo, compileall sem erros e 100% de cobertura direcionada de statements e branches em `metrics.py`. A Phase 4.3 está implementada em branch isolada e aguarda validação manual.
 
 ## Governança e integridade
 
