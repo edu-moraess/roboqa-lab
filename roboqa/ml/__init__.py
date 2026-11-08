@@ -20,10 +20,26 @@ from roboqa.ml.contracts import (
     FeatureSample,
     FeatureValue,
 )
+from roboqa.ml.evaluation import (
+    AnomalyClassificationMetrics,
+    AnomalyConfusionMatrix,
+    AnomalyEvaluationCounts,
+    AnomalyEvaluationError,
+    AnomalyEvaluationReport,
+    AnomalyEvaluationSlice,
+    EvaluationScope,
+)
 from roboqa.ml.features import FeatureEngineeringError, extract_temporal_features
 
 __all__ = [
     "AnomalyDecision",
+    "AnomalyClassificationMetrics",
+    "AnomalyConfusionMatrix",
+    "AnomalyEvaluationCounts",
+    "AnomalyEvaluationError",
+    "AnomalyEvaluationReport",
+    "AnomalyEvaluationSlice",
+    "EvaluationScope",
     "AnomalyDetectionError",
     "AnomalyPrediction",
     "AnomalyReference",
