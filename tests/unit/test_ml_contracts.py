@@ -168,3 +168,14 @@ def test_dataset_rejects_non_iterable_samples():
     with pytest.raises(FeatureDatasetError):
         FeatureDataset("d", "1", "2026-11-08T05:00:00Z",
                        None, HASH_A, HASH_B)
+
+def test_dataset_rejects_omitted_feature_instead_of_explicit_missing_value():
+    with pytest.raises(FeatureDatasetError, match="same feature names"):
+        dataset([
+            sample("s1", "run-a", features=[
+                feature("nis_mean"),
+                feature("latency_mean", 0.2, unit="s"),
+            ]),
+            sample("s2", "run-b", split=DatasetSplit.TEST,
+                   features=[feature("nis_mean")]),
+        ])
