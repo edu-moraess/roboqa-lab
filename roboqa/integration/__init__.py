@@ -8,6 +8,11 @@ from roboqa.integration.contracts import (
     TransportReplaySummary,
 )
 from roboqa.integration.replay import TransportReplayResult, replay_transport
+from roboqa.integration.measurement_adapter import (
+    AdaptedMeasurement,
+    MeasurementAdapterError,
+    adapt_accepted_envelopes,
+)
 
 __all__ = [
     "DeliveryDecision",
@@ -18,4 +23,7 @@ __all__ = [
     "TransportReplaySummary",
     "TransportReplayResult",
     "replay_transport",
+    "AdaptedMeasurement",
+    "MeasurementAdapterError",
+    "adapt_accepted_envelopes",
 ]
