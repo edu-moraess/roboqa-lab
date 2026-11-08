@@ -45,6 +45,13 @@ def _index(value: object, size: int) -> int:
     return value
 
 
+def _shifted_arrival(envelope: RawMeasurementEnvelope, delay_s: float) -> float:
+    arrival_time = envelope.arrival_time + delay_s
+    if not math.isfinite(arrival_time):
+        raise ContractError("transport operation produced a non-finite arrival_time")
+    return arrival_time
+
+
 def _with_payload(
     envelope: RawMeasurementEnvelope, payload: Mapping[str, object]
 ) -> RawMeasurementEnvelope:
@@ -181,7 +188,7 @@ class DelayOperator(_BaseOperator):
         return (RawMeasurementEnvelope(
             sensor_id=envelope.sensor_id,
             acquisition_time=envelope.acquisition_time,
-            arrival_time=envelope.arrival_time + delay,
+            arrival_time=_shifted_arrival(envelope, delay),
             sequence_number=envelope.sequence_number,
             payload=envelope.payload,
             source_id=envelope.source_id,
@@ -218,7 +225,7 @@ class ArrivalShiftOperator(_BaseOperator):
         return (RawMeasurementEnvelope(
             sensor_id=envelope.sensor_id,
             acquisition_time=envelope.acquisition_time,
-            arrival_time=envelope.arrival_time + shift,
+            arrival_time=_shifted_arrival(envelope, shift),
             sequence_number=envelope.sequence_number,
             payload=envelope.payload,
             source_id=envelope.source_id,
@@ -331,7 +338,7 @@ class DuplicateOperator(_BaseOperator):
         duplicate = RawMeasurementEnvelope(
             sensor_id=envelope.sensor_id,
             acquisition_time=envelope.acquisition_time,
-            arrival_time=envelope.arrival_time + delay,
+            arrival_time=_shifted_arrival(envelope, delay),
             sequence_number=envelope.sequence_number,
             payload=envelope.payload,
             source_id=envelope.source_id,
