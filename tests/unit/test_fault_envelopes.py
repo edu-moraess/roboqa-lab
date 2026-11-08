@@ -57,3 +57,31 @@ def test_raw_envelope_accepts_numpy_payload_without_mutable_aliases():
     )
     source[0] = 99.0
     assert envelope.payload["z"] == (1.0, 2.0)
+
+
+
+@pytest.mark.parametrize("kwargs", [
+    {"acquisition_time": True},
+    {"arrival_time": "1.0"},
+    {"sequence_number": True},
+    {"sequence_number": -1},
+    {"source_id": ""},
+])
+def test_raw_envelope_rejects_invalid_scalar_fields(kwargs):
+    values = {
+        "sensor_id": "gps",
+        "acquisition_time": 1.0,
+        "arrival_time": 1.1,
+        "sequence_number": 0,
+        "payload": {},
+    }
+    values.update(kwargs)
+    with pytest.raises(ContractError):
+        RawMeasurementEnvelope(**values)
+
+
+def test_raw_envelope_rejects_non_string_mapping_keys_and_unsupported_objects():
+    with pytest.raises(ContractError, match="keys must be strings"):
+        RawMeasurementEnvelope("gps", 1.0, 1.1, 0, {1: "bad"})
+    with pytest.raises(ContractError, match="unsupported type"):
+        RawMeasurementEnvelope("gps", 1.0, 1.1, 0, {"bad": object()})

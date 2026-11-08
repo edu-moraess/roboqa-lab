@@ -1,4 +1,4 @@
-"""Fault Injection contracts — Phase 3.1."""
+"""Fault Injection engine and immutable contracts — Phase 3.2."""
 from roboqa.fault_injection.contracts import (
     ContractError,
     FaultEvent,
@@ -10,7 +10,23 @@ from roboqa.fault_injection.contracts import (
     RecoveryRecord,
     RecoveryStatus,
 )
+from roboqa.fault_injection.engine import (
+    FaultCampaignExecution,
+    FaultExecution,
+    FaultInjectionEngine,
+)
 from roboqa.fault_injection.envelopes import RawMeasurementEnvelope
+from roboqa.fault_injection.operators import (
+    ArrivalShiftOperator,
+    BiasOperator,
+    DelayOperator,
+    DropoutOperator,
+    DuplicateOperator,
+    EnvelopeFaultOperator,
+    InvalidPayloadOperator,
+    OutlierOperator,
+    PacketLossOperator,
+)
 from roboqa.fault_injection.provenance import (
     FaultProvenance,
     build_configuration_hash,
@@ -21,20 +37,12 @@ from roboqa.fault_injection.provenance import (
 )
 
 __all__ = [
-    "ContractError",
-    "FaultEvent",
-    "FaultOperator",
-    "FaultResult",
-    "FaultScenario",
-    "FaultStatus",
-    "FaultType",
-    "RecoveryRecord",
-    "RecoveryStatus",
-    "RawMeasurementEnvelope",
-    "FaultProvenance",
-    "build_configuration_hash",
-    "canonical_json",
-    "sha256_digest",
-    "validate_sha256",
-    "validate_utc_timestamp",
+    "ContractError", "FaultEvent", "FaultOperator", "FaultResult", "FaultScenario",
+    "FaultStatus", "FaultType", "RecoveryRecord", "RecoveryStatus",
+    "FaultCampaignExecution", "FaultExecution", "FaultInjectionEngine", "RawMeasurementEnvelope",
+    "ArrivalShiftOperator", "BiasOperator", "DelayOperator", "DropoutOperator",
+    "DuplicateOperator", "EnvelopeFaultOperator", "InvalidPayloadOperator",
+    "OutlierOperator", "PacketLossOperator", "FaultProvenance",
+    "build_configuration_hash", "canonical_json", "sha256_digest",
+    "validate_sha256", "validate_utc_timestamp",
 ]
