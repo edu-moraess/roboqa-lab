@@ -5,9 +5,9 @@ or execute fault operators.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from enum import Enum
-import math
 from types import MappingProxyType
 from typing import Any, Mapping, Protocol, runtime_checkable
 

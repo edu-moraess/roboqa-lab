@@ -1,8 +1,8 @@
 """Raw event envelopes at the boundary before Measurement validation."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Mapping
 

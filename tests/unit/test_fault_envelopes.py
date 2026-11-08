@@ -1,7 +1,7 @@
 import math
 
-import pytest
 import numpy as np
+import pytest
 
 from roboqa.fault_injection import ContractError, RawMeasurementEnvelope
 

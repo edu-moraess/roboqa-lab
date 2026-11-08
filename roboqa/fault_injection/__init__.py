@@ -12,7 +12,6 @@ from roboqa.fault_injection.contracts import (
 )
 from roboqa.fault_injection.envelopes import RawMeasurementEnvelope
 from roboqa.fault_injection.provenance import (
-    FaultProvenance,
     build_configuration_hash,
     canonical_json,
     sha256_digest,
@@ -31,7 +30,6 @@ __all__ = [
     "RecoveryRecord",
     "RecoveryStatus",
     "RawMeasurementEnvelope",
-    "FaultProvenance",
     "build_configuration_hash",
     "canonical_json",
     "sha256_digest",

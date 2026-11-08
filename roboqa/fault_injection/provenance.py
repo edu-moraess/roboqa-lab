@@ -1,12 +1,11 @@
 """Canonical serialization and SHA-256 provenance helpers."""
 from __future__ import annotations
 
-from datetime import datetime
 import hashlib
 import json
-from typing import Any, Mapping
-
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Mapping
 
 from roboqa.fault_injection.contracts import ContractError, _non_empty, thaw_json
 
