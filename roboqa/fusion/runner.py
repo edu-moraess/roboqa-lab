@@ -1,6 +1,6 @@
 """
 Temporal orchestration of the EKF over asynchronous measurements.
-Fase 2 — Fusion Engine
+Fase 2 — Fusion Engine; Phase 4.1 — Fusion Telemetry.
 
 Policy:
 - Measurements sorted by (t, sensor_name) for deterministic ordering.
@@ -18,7 +18,12 @@ import numpy as np
 
 from roboqa.data.schemas import GroundTruth, Measurement, SchemaError
 from roboqa.fusion.ekf import EKF, EKFNumericalError
-from roboqa.fusion.result import FilterDiagnostics, FilterResult, FilterStatus
+from roboqa.fusion.result import (
+    FilterDiagnostics,
+    FilterResult,
+    FilterStatus,
+    InnovationTelemetry,
+)
 from roboqa.fusion.sensors import validate_measurement_for_fusion
 
 
@@ -100,6 +105,7 @@ def run_filter(
     ts: list[float] = [float(ekf.t)]
     xs: list[np.ndarray] = [ekf.x.copy()]
     Ps: list[np.ndarray] = [ekf.P.copy()]
+    telemetry: list[InnovationTelemetry] = []
     sensors_seen: set[str] = set()
     status = FilterStatus.OK
 
@@ -118,7 +124,8 @@ def run_filter(
                 ekf.predict(measurement.t)
                 diag.n_predict += 1
 
-            ekf.update(measurement)
+            update_evidence = ekf.update(measurement)
+            telemetry.append(update_evidence)
             diag.n_update += 1
             sensors_seen.add(measurement.sensor)
             ts.append(float(ekf.t))
@@ -148,6 +155,7 @@ def run_filter(
             "t0": start_t,
             "n_measurements": len(ordered),
         },
+        telemetry=tuple(telemetry),
     )
 
 
