@@ -687,3 +687,33 @@ python -m pytest -q
 
 - No Quality Gate integration or policy changes, no training of a downstream supervised model, no external dataset/model downloads, no Streamlit work, and no online inference service.
 - No merge or changes to `main`.
+
+
+---
+
+## 27. Engineering checkpoint — Phase 4.4-D0 anomaly evaluation contracts (2026-11-08)
+
+### Scope implemented; manual validation pending
+
+- Branch: `feat/ml-evaluation-contracts-phase-4-4d0`.
+- Base: Phase 4.4-C validated documentation checkpoint `4db65b412c63bd42a19f723187c5249b527d47e0`.
+- Adds `roboqa/ml/evaluation.py` with immutable evaluation evidence contracts.
+- Adds `tests/unit/test_ml_evaluation.py`, public exports in `roboqa/ml/__init__.py`, and specification `docs/phase-4-4d0-anomaly-evaluation-contracts.md`.
+- Adds README roadmap/status entry. No model or Quality Gate behavior is changed.
+- Validation status: **PENDING MANUAL COLAB**. No pytest, Ruff, compileall, coverage, or runtime PASS is claimed for this branch.
+
+### Contract behavior
+
+- `AnomalyConfusionMatrix` validates non-negative TP/FP/TN/FN counts.
+- `AnomalyClassificationMetrics` carries precision, recall, F1, specificity, false-positive rate, false-negative rate, and balanced accuracy as optional finite ratios in [0, 1]. Undefined values remain `None`.
+- `AnomalyEvaluationCounts` reconciles total/labeled/unknown and scored/unscorable accounting.
+- `AnomalyEvaluationSlice` supports overall, per-run, and per-scenario scopes and verifies confusion-matrix totals against scored labeled samples.
+- `AnomalyEvaluationReport` binds dataset ID, VALIDATION or TEST split, detector method, UTC timestamp, dataset hash, prediction hash, and unique evaluation slices. TRAIN is explicitly prohibited.
+- UNKNOWN reference labels are counted separately and are not part of binary confusion counts. UNSCORABLE predictions are separately accounted for rather than coerced to NORMAL or ANOMALOUS.
+
+### Scope boundaries and next steps
+
+- D0 defines evidence contracts only. It does not implement metric aggregation, prediction/dataset joining, threshold selection, calibration, or hyperparameter search.
+- Reference labels remain evaluation-only and are not added to model inputs.
+- No Quality Gate integration, policy changes, model fitting changes, dataset downloads, Streamlit, CI/GitHub Actions, merge, or changes to `main`.
+- Next: D1 evaluation engine with exact sample identity matching and deterministic overall/run/scenario metrics; D2 robustness comparisons on fixed scenarios; D3 calibration protocol restricted to TRAIN/VALIDATION with TEST held back for final evaluation.
