@@ -45,6 +45,7 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 4.5-A | Fault-to-QA Integration Contracts | **VALIDATED — 52 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-B | Deterministic transport replay, watermark, deduplication and packet accounting | **VALIDATED — 19 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-C | Strict Measurement adapter from accepted transport envelopes | **VALIDATED — 10 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
+| 4.5-D1 | Deterministic event-time Fusion scheduling boundary | **VALIDATED — 15 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.6 | Streamlit Control Center | PLANNED |
 
 ### Relatório consolidado
@@ -205,3 +206,16 @@ MIT — a definir formalmente na Fase 6.
 
 
 Phase 4.5-C was manually validated in Colab on code checkpoint `77f0e6e267f08f86ddc7f1468da0b9d474d348ef`: 10 targeted adapter tests passed; the full pytest suite exited 0 without reported failures (aggregate count not exposed); Ruff passed; compileall exited 0. The adapter does not change `run_filter` scheduling or establish arrival-order Fusion execution.
+
+
+### Phase 4.5-D1 — Deterministic Fusion Scheduling (VALIDATED)
+
+- Adds an immutable `FusionSchedule` boundary between the accepted transport replay and the existing monotonic Fusion runner.
+- Verifies a one-to-one match between replay-accepted envelope identities and adapted measurements.
+- Validates sensor identity, acquisition/arrival/processing clocks, and normalized payload.
+- Uses acquisition/event time for offline batch execution order, with deterministic sensor/source/sequence tie-breakers.
+- Schedule SHA-256 binds replay provenance, clocks, payload, and caller-supplied covariance R.
+- Replay summary remains attached, preserving duplicate, late, invalid, and dropped delivery accounting.
+- Manual Colab validation: **15 targeted tests passed**; full pytest completed at 100%, exit code 0; full Ruff passed; full compileall exit code 0. The full-suite output did not expose an aggregate test count, so none is inferred.
+- This is an offline batch schedule, not a live arrival-order scheduler. EKF and `run_filter` remain unchanged; no rewind/fixed-lag reprocessing is implemented.
+- Specification: [Phase 4.5-D1 — Deterministic Fusion Scheduling](docs/phase-4-5d1-fusion-scheduling-contract.md).
