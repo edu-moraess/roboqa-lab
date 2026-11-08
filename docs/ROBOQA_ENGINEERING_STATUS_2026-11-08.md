@@ -369,3 +369,28 @@ The existing `run_filter` still sorts normalized `Measurement.t`. The new ARRIVA
 ### Manual Colab gate
 
 Run targeted replay tests, targeted Ruff and compileall, then full pytest, full Ruff, and full compileall. Keep PR #15 Draft until the actual outputs are reviewed. Do not infer test totals or coverage percentages.
+
+
+---
+
+## 17. Engineering addendum — Phase 4.5-B validation (2026-11-08)
+
+### Phase 4.5-B — Deterministic Transport Replay: VALIDATION PASS
+
+- Branch: `feat/temporal-replay-phase-4-5b`.
+- Code checkpoint used for manual validation: `9e239725775657ca0ac5bb65e3d6dd4e72fd2d5f`.
+- PR #15: https://github.com/edu-moraess/roboqa-lab/pull/15 — remains Draft, open, and unmerged; base remains `feat/fault-to-qa-contracts-phase-4-5a), not `main`.
+- Targeted replay tests: **19 passed**.
+- The first targeted run exposed three fixture errors: two packets had arrival timestamps earlier than acquisition timestamps. Production validation was retained; the three test fixtures were corrected to preserve causal acquisition/arrival order while maintaining out-of-order event time. The corrected replay suite passed all 19 tests.
+- Targeted Ruff and targeted compileall: **PASS**.
+- Full `pytest -q`: exit code 0, no failures reported. The captured output did not expose an unambiguous aggregate count; no total is inferred.
+- Full `ruff check roboqa tests`: **PASS**.
+- Full `python -m compileall -q roboqa tests`: **PASS**.
+- README and phase specification updated to record the evidence and preserve the explicit scope boundary.
+- Result: **VALIDATION PASS** for the deterministic offline transport replay and repository compatibility.
+- This does not validate a production RawMeasurementEnvelope-to-Measurement adapter, arrival-order execution inside Fusion, or end-to-end Fusion Telemetry → Quality Metrics → Quality Gate behavior.
+- No model training, inference, dataset downloads, CI/GitHub Actions, merge, or changes to `main` were performed.
+
+### Next engineering step
+
+Proceed to Phase 4.5-C/D with a separately specified adapter and Fusion scheduling boundary. Define how accepted envelopes map to normalized `Measurement`, whether event-time or arrival-time controls execution, and how late/duplicate/dropped decisions are carried into telemetry and QA. Add tests that prove the effect on Fusion telemetry, metrics, and deterministic Quality Gate before extending the product UI. Keep the Quality Gate as the sole decision authority.
