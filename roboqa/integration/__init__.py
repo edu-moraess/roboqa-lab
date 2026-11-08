@@ -19,6 +19,14 @@ from roboqa.integration.scheduler import (
     FusionSchedulingPolicy,
     build_fusion_schedule,
 )
+from roboqa.integration.execution import (
+    ExecutionDisposition,
+    FusionExecutionError,
+    FusionExecutionRecord,
+    FusionExecutionResult,
+    MeasurementExecutionOutcome,
+    execute_fusion_schedule,
+)
 
 __all__ = [
     "DeliveryDecision",
@@ -36,4 +44,10 @@ __all__ = [
     "FusionSchedulingError",
     "FusionSchedulingPolicy",
     "build_fusion_schedule",
+    "ExecutionDisposition",
+    "FusionExecutionError",
+    "FusionExecutionRecord",
+    "FusionExecutionResult",
+    "MeasurementExecutionOutcome",
+    "execute_fusion_schedule",
 ]
