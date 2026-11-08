@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
-from typing import Protocol, Sequence, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import numpy as np
 
