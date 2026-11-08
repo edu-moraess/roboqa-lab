@@ -48,6 +48,17 @@ def test_half_open_horizon_excludes_occurrence_starting_at_window_end():
     assert [item.start_time for item in result] == [2.0, 4.0]
 
 
+def test_unbounded_recurrence_supports_horizons_after_large_absolute_indices():
+    schedule = FaultSchedule(_scenario(), repeat_interval_s=5.0)
+    result = TemporalScheduler().schedule(
+        (schedule,), window_start=1_000_003.0, window_end=1_000_009.0
+    )
+    assert [(item.occurrence_index, item.start_time, item.end_time) for item in result] == [
+        (200_000, 1_000_002.0, 1_000_004.0),
+        (200_001, 1_000_007.0, 1_000_009.0),
+    ]
+
+
 def test_independent_schedules_can_overlap_and_are_sorted_stably():
     a = FaultSchedule(_scenario("zeta", start=3.0, end=5.0))
     b = FaultSchedule(_scenario("alpha", start=3.0, end=4.0, fault_type=FaultType.DELAY))
