@@ -342,13 +342,13 @@ Keep the deterministic Quality Gate as the sole decision authority. Do not begin
 
 - Branch: `feat/temporal-replay-phase-4-5b`.
 - Base: Phase 4.5-A checkpoint `d4010790a4654d304a443aa7f5603af92b251926`.
-- PR #15 is intended to target `feat/fault-to-qa-contracts-phase-4-5a`, not `main`; it remains Draft pending manual Colab validation.
+- PR #15: https://github.com/edu-moraess/roboqa-lab/pull/15 — open, Draft, unmerged; targets `feat/fault-to-qa-contracts-phase-4-5a`, not `main`.
 - Added `roboqa.integration.replay_transport` and immutable `TransportReplayResult`.
 - Implemented deterministic ARRIVAL_ORDER and ACQUISITION_ORDER batch ordering, canonical tie-breaking, source-identity validation, first-delivery-wins duplicate suppression, acquisition-time watermark lateness for ARRIVAL_ORDER, invalid three-clock/payload classification, dropped-source accounting, and SHA-256 provenance.
 - Exported replay API from `roboqa.integration`.
 - Added focused unit/adversarial tests in `tests/unit/test_transport_replay.py` and normative specification in `docs/phase-4-5b-deterministic-transport-replay.md`.
 - README roadmap now distinguishes implemented-but-unvalidated Phase 4.5-B from the planned adapter and end-to-end phases.
-- **Validation status: PENDING MANUAL COLAB.** No pytest, Ruff, compileall, coverage, or runtime PASS is claimed for this branch yet.
+- Current PR head at documentation checkpoint: `ebd21fad94b3e0c8b9f70519ff1e9a4ef5ef7ba4`.\n- Compare against Phase 4.5-A base: 7 commits ahead, 0 behind; six changed files.\n- **Validation status: PENDING MANUAL COLAB.** No pytest, Ruff, compileall, coverage, or runtime PASS is claimed for this branch yet.
 
 ### Normative semantics
 
