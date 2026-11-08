@@ -394,3 +394,51 @@ Run targeted replay tests, targeted Ruff and compileall, then full pytest, full 
 ### Next engineering step
 
 Proceed to Phase 4.5-C/D with a separately specified adapter and Fusion scheduling boundary. Define how accepted envelopes map to normalized `Measurement`, whether event-time or arrival-time controls execution, and how late/duplicate/dropped decisions are carried into telemetry and QA. Add tests that prove the effect on Fusion telemetry, metrics, and deterministic Quality Gate before extending the product UI. Keep the Quality Gate as the sole decision authority.
+
+---
+
+## 18. Engineering addendum — Phase 4.5-C Measurement adapter (2026-11-08)
+
+### Implementation checkpoint — manual validation pending
+
+- Branch: `feat/measurement-adapter-phase-4-5c`.
+- Base: validated Phase 4.5-B checkpoint `7fd0fd808b3732392775d0dc28e52127ec9a8924`.
+- PR #16: https://github.com/edu-moraess/roboqa-lab/pull/16 — open, Draft, unmerged; targets `feat/temporal-replay-phase-4-5b`, not `main`.
+- Added `roboqa.integration.measurement_adapter` with `AdaptedMeasurement`, `MeasurementAdapterError`, and `adapt_accepted_envelopes`.
+- Only replay-accepted envelopes are converted. Duplicate, late, invalid, and dropped decisions remain in the replay summary.
+- Payload maps to Measurement z; acquisition_time maps to Measurement.t. Arrival and processing clocks and source identity are retained alongside each normalized measurement.
+- Covariance R must be supplied explicitly by the caller per normalized sensor ID. No noise model is inferred or defaulted.
+- Existing Measurement schema and Fusion sensor registry enforce finite values, dimensions, covariance validity, and supported sensor types.
+- Added targeted unit tests and adapter specification; README roadmap updated.
+- Important limitation: the adapter preserves replay order but does not change Fusion execution order. Existing `run_filter` sorts by `(Measurement.t, sensor)`; arrival-order Fusion scheduling is a separate Phase 4.5-D design decision.
+- **Validation status: PENDING MANUAL COLAB.** No pytest, Ruff, compileall, coverage, or runtime PASS is claimed yet.
+- No changes to `main`, no merge, no CI/GitHub Actions, no model training/inference, and no Streamlit changes.
+
+### Manual Colab gate
+
+Sync branch `feat/measurement-adapter-phase-4-5c`, then run the targeted adapter tests, targeted Ruff/compileall, full pytest, full Ruff, and full compileall. Keep PR #16 Draft until outputs are reviewed.
+
+
+---
+
+## 19. Engineering addendum — Phase 4.5-C Measurement adapter validation (2026-11-08)
+
+### Phase 4.5-C — Strict Measurement Adapter: VALIDATION PASS
+
+- Branch: `feat/measurement-adapter-phase-4-5c`.
+- Validated code checkpoint: `77f0e6e267f08f86ddc7f1468da0b9d474d348ef`; subsequent changes in this checkpoint are limited to a test assertion and import ordering.
+- Base: Phase 4.5-B validated checkpoint `7fd0fd808b3732392775d0dc28e52127ec9a8924`.
+- PR #16: https://github.com/edu-moraess/roboqa-lab/pull/16 — remains Draft, open, and unmerged; targets `feat/temporal-replay-phase-4-5b`, not `main`.
+- Manual Colab targeted adapter tests: **10 passed**.
+- Manual Colab full `python -m pytest -q`: exit code **0**, no failures reported. The captured output did not expose an unambiguous aggregate test count; no total is inferred.
+- Full `ruff check roboqa tests`: **All checks passed!**
+- Full `python -m compileall -q roboqa tests`: exit code **0**.
+- The first validation exposed a test assertion regex case mismatch (`dim` versus the Portuguese message beginning with `Dimensão`), not an adapter behavior defect. The assertion was made case-insensitive. Ruff also identified import ordering in `roboqa/integration/__init__.py`; imports were reordered.
+- The two corrections changed only `tests/unit/test_measurement_adapter.py` and `roboqa/integration/__init__.py`; the production adapter implementation was not changed. `git diff --check` passed.
+- Result: **VALIDATION PASS** for the strict Measurement adapter contracts and repository compatibility.
+- Scope limitation remains: the adapter maps acquisition time to `Measurement.t`, preserves arrival/processing clocks as metadata, and does not change `run_filter` sorting. This is not evidence of arrival-order Fusion execution or end-to-end Fusion Telemetry → Quality Metrics → Quality Gate integration.
+- No training, inference, dataset downloads, CI/GitHub Actions, merge, or changes to `main` were performed.
+
+### Next engineering step
+
+Phase 4.5-D should specify and test the Fusion scheduling boundary explicitly: whether accepted measurements execute in acquisition/event-time order or arrival order, how late/duplicate/dropped decisions influence execution and telemetry, and how replay evidence propagates into Quality Metrics and the deterministic Quality Gate. Preserve the Quality Gate as the sole decision authority.
