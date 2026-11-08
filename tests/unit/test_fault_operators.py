@@ -1,10 +1,21 @@
 import numpy as np
 import pytest
 
-from roboqa.fault_injection import ContractError, FaultScenario, FaultType, RawMeasurementEnvelope
+from roboqa.fault_injection import (
+    ContractError,
+    FaultScenario,
+    FaultType,
+    RawMeasurementEnvelope,
+)
 from roboqa.fault_injection.operators import (
-    ArrivalShiftOperator, BiasOperator, DelayOperator, DropoutOperator,
-    DuplicateOperator, InvalidPayloadOperator, OutlierOperator, PacketLossOperator,
+    ArrivalShiftOperator,
+    BiasOperator,
+    DelayOperator,
+    DropoutOperator,
+    DuplicateOperator,
+    InvalidPayloadOperator,
+    OutlierOperator,
+    PacketLossOperator,
 )
 
 
@@ -78,3 +89,76 @@ def test_duplicate_preserves_identity_and_emits_two_packets():
 def test_invalid_operator_parameters_are_rejected(operator, params):
     with pytest.raises(ContractError):
         operator.validate_parameters(params)
+
+
+
+def test_operator_descriptions_and_parameter_type_guards():
+    operator = DelayOperator()
+    assert operator.describe() == {
+        "operator_id": "delay", "version": "1.0.0", "fault_type": "DELAY"
+    }
+    with pytest.raises(ContractError, match="mapping"):
+        operator.validate_parameters(None)
+    with pytest.raises(ContractError, match="finite number"):
+        operator.validate_parameters({"delay_s": True})
+
+
+@pytest.mark.parametrize("parameters", [
+    {"shift_s": 0.0, "sequence_numbers": []},
+    {"shift_s": 0.0, "sequence_numbers": [True]},
+    {"shift_s": 0.0, "sequence_numbers": [1, 1]},
+])
+def test_arrival_shift_rejects_invalid_sequence_filters(parameters):
+    with pytest.raises(ContractError):
+        ArrivalShiftOperator().validate_parameters(parameters)
+
+
+def test_bias_rejects_dimension_mismatch_and_invalid_payload_shape():
+    source = _envelope()
+    with pytest.raises(ContractError, match="dimension"):
+        BiasOperator().apply(
+            source, _scenario(FaultType.BIAS, {"offset": (1.0,)}),
+            np.random.default_rng(1),
+        )
+    malformed = RawMeasurementEnvelope("gps", 1.0, 1.1, 1, {"z": []})
+    with pytest.raises(ContractError, match="non-empty vector"):
+        BiasOperator().apply(
+            malformed, _scenario(FaultType.BIAS, {"offset": (1.0,)}),
+            np.random.default_rng(1),
+        )
+
+
+def test_outlier_and_invalid_payload_reject_out_of_range_indices():
+    source = _envelope()
+    with pytest.raises(ContractError, match="index"):
+        OutlierOperator().apply(
+            source, _scenario(FaultType.OUTLIER, {"sigma": 1.0, "index": 9}),
+            np.random.default_rng(1),
+        )
+    with pytest.raises(ContractError, match="index"):
+        InvalidPayloadOperator().apply(
+            source, _scenario(FaultType.INVALID_PAYLOAD, {"index": 9}),
+            np.random.default_rng(1),
+        )
+
+
+@pytest.mark.parametrize("kind,expected", [
+    ("positive_inf", float("inf")),
+    ("negative_inf", float("-inf")),
+])
+def test_invalid_payload_supports_both_infinity_signs(kind, expected):
+    output = InvalidPayloadOperator().apply(
+        _envelope(),
+        _scenario(FaultType.INVALID_PAYLOAD, {"kind": kind}),
+        np.random.default_rng(1),
+    )[0]
+    assert output.payload["z"][0] == expected
+
+
+def test_duplicate_operator_default_delay_is_zero():
+    output = DuplicateOperator().apply(
+        _envelope(),
+        _scenario(FaultType.DUPLICATE),
+        np.random.default_rng(1),
+    )
+    assert output[1].arrival_time == output[0].arrival_time
