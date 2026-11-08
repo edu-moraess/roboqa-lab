@@ -42,6 +42,7 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 4.2 | Quality Metrics Engine | **VALIDATED — FULL SUITE, RUFF, COMPILEALL; 100% TARGETED COVERAGE** |
 | 4.3 | Deterministic Quality Gate | **VALIDATED — PYTEST, RUFF, COMPILEALL** |
 | 4.4-A | ML Feature/Dataset Contracts | **VALIDATED — TARGETED + FULL SUITE, RUFF, COMPILEALL** |
+| 4.4-B | Temporal feature extraction from Fusion innovation telemetry | **IMPLEMENTED — MANUAL COLAB VALIDATION PENDING** |
 | 4.5-A | Fault-to-QA Integration Contracts | **VALIDATED — 52 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-B | Deterministic transport replay, watermark, deduplication and packet accounting | **VALIDATED — 19 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-C | Strict Measurement adapter from accepted transport envelopes | **VALIDATED — 10 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
@@ -132,10 +133,10 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 
 ## Próximas etapas
 
-1. **4.4-B — Feature Engineering:** extrair features temporais a partir de telemetria e evidências validadas.
+1. **4.4-B — Feature Engineering:** implementação criada; validação manual no Colab pendente.
 2. **4.4-C — Anomaly Baselines:** baseline estatístico e detector consultivo, sem autoridade sobre o Quality Gate.
 3. **4.4-D/E — Evaluation and Advisory Report:** avaliação por cenário/run, calibração, explicabilidade e relatório independente.
-4. **4.5 — Fault-to-QA Integration:** avaliar os efeitos das falhas no pipeline completo.
+4. **4.5 — Fault-to-QA Integration:** contratos, replay, adaptador, execução e propagação de evidências validados nas subfases 4.5-A a D3.
 5. **4.6 — Streamlit Control Center:** interface operacional de experimentos, telemetria e relatórios.
 
 
@@ -248,3 +249,17 @@ Phase 4.5-C was manually validated in Colab on code checkpoint `77f0e6e267f08f86
 - The initial Ruff run identified one unused test import; it was removed in commit `e4365e860ab27934cd2a40df135393fa72b4c01a`. After syncing that exact HEAD, all full checks passed.
 - Result: **FULL VALIDATION PASS**. Validation evidence is from manual Colab, not GitHub Actions.
 - Specification: [Phase 4.5-D3 — Integrated QA evidence propagation](docs/phase-4-5d3-integrated-qa-evidence.md).
+
+
+### Phase 4.4-B — Temporal Feature Engineering (implementation; validation pending)
+
+- Adds `extract_temporal_features` over immutable Fusion `InnovationTelemetry`.
+- Produces sensor-scoped fixed-duration windows anchored at the earliest telemetry timestamp.
+- Features include update count, innovation norm mean/std/max, NIS mean/std/max, innovation covariance trace mean, and inter-update gap mean/max.
+- Empty sensor windows preserve an available zero update count and mark other features MISSING; one-update windows mark inter-update gaps MISSING.
+- Source and configuration SHA-256 hashes bind ordered telemetry and extraction configuration.
+- Uses the Phase 4.4-A `FeatureDataset` contracts; run-level split assignment remains explicit.
+- No imputation, normalization, training, inference, downloads, or Quality Gate changes.
+- Tests: `tests/unit/test_ml_features.py`.
+- Specification: [Phase 4.4-B — Temporal Feature Engineering](docs/phase-4-4b-temporal-feature-engineering.md).
+- Status: **PENDING MANUAL COLAB VALIDATION**.
