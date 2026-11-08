@@ -173,6 +173,11 @@ def test_summary_rejects_wrong_number_of_decision_records():
         summary([], delivered_count=1)
 
 
+def test_summary_rejects_unaccounted_source_packets():
+    with pytest.raises(IntegrationContractError):
+        summary([decision()], source_count=2)
+
+
 def test_summary_rejects_decision_count_mismatch():
     duplicate = decision(DeliveryDisposition.DUPLICATE)
     with pytest.raises(IntegrationContractError):
