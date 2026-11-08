@@ -66,3 +66,31 @@ def test_fault_provenance_validates_hashes_seed_and_timezone():
 
     with pytest.raises(ContractError):
         validate_utc_timestamp("2026-11-08T05:00:00+03:00")
+
+
+
+def test_provenance_rejects_invalid_configuration_and_seed_bounds():
+    with pytest.raises(ContractError, match="configuration must be a mapping"):
+        build_configuration_hash([])
+    digest = "a" * 64
+    base = {
+        "run_id": "run",
+        "scenario_id": "scenario",
+        "source_hash": digest,
+        "output_hash": digest,
+        "operator_version": "v1",
+        "configuration_hash": digest,
+        "created_at": "2026-11-08T02:00:00Z",
+    }
+    with pytest.raises(ContractError, match="seed must be an integer"):
+        FaultProvenance(seed=True, **base)
+    with pytest.raises(ContractError, match="seed must be in"):
+        FaultProvenance(seed=2**64, **base)
+    with pytest.raises(ContractError, match="parent_run_id"):
+        FaultProvenance(seed=1, parent_run_id="", **base)
+
+
+def test_timestamp_rejects_malformed_and_empty_values():
+    for value in ("", "not-a-timestamp"):
+        with pytest.raises(ContractError):
+            validate_utc_timestamp(value)
