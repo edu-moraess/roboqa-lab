@@ -63,3 +63,6 @@ def test_fault_provenance_validates_hashes_seed_and_timezone():
             output_hash=digest, operator_version="v1", configuration_hash=digest,
             seed=42, created_at="2026-11-08T02:00:00",
         )
+
+    with pytest.raises(ContractError):
+        validate_utc_timestamp("2026-11-08T05:00:00+03:00")

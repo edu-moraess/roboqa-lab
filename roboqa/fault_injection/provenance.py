@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Mapping
 
 from roboqa.fault_injection.contracts import ContractError, _non_empty, thaw_json
@@ -49,6 +49,8 @@ def validate_utc_timestamp(value: str) -> str:
         raise ContractError("created_at must be a valid ISO-8601 timestamp") from exc
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ContractError("created_at must include a timezone")
+    if parsed.utcoffset() != timedelta(0):
+        raise ContractError("created_at must be expressed in UTC")
     return value
 
 
