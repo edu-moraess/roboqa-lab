@@ -32,12 +32,15 @@ def _validate_covariance(P: np.ndarray, name: str) -> np.ndarray:
     candidate = np.asarray(P, dtype=np.float64)
     if candidate.shape != (5, 5) or not np.all(np.isfinite(candidate)):
         raise EKFNumericalError(f"{name} must be a finite 5x5 matrix.")
-    scale = max(1.0, float(np.linalg.norm(candidate, ord=2)))
-    symmetry_tol = 1e-10 * scale
-    if not np.allclose(candidate, candidate.T, rtol=0.0, atol=symmetry_tol):
-        raise EKFNumericalError(f"{name} is not symmetric within tolerance.")
-    symmetric = 0.5 * (candidate + candidate.T)
-    min_eig = float(np.linalg.eigvalsh(symmetric).min())
+    try:
+        scale = max(1.0, float(np.linalg.norm(candidate, ord=2)))
+        symmetry_tol = 1e-10 * scale
+        if not np.allclose(candidate, candidate.T, rtol=0.0, atol=symmetry_tol):
+            raise EKFNumericalError(f"{name} is not symmetric within tolerance.")
+        symmetric = 0.5 * (candidate + candidate.T)
+        min_eig = float(np.linalg.eigvalsh(symmetric).min())
+    except np.linalg.LinAlgError as exc:
+        raise EKFNumericalError(f"Could not validate {name}: {exc}") from exc
     psd_tol = 1e-10 * scale
     if min_eig < -psd_tol:
         raise EKFNumericalError(
@@ -68,7 +71,10 @@ class EKF:
             raise SchemaError("P0 contém valores não-finitos.")
         if not np.allclose(P0, P0.T, rtol=0.0, atol=1e-8):
             raise SchemaError("P0 não é simétrica.")
-        eig = np.linalg.eigvalsh(0.5 * (P0 + P0.T))
+        try:
+            eig = np.linalg.eigvalsh(0.5 * (P0 + P0.T))
+        except np.linalg.LinAlgError as exc:
+            raise SchemaError(f"Não foi possível validar P0: {exc}") from exc
         if np.any(eig < -1e-8):
             raise SchemaError(f"P0 não é PSD (min eig={eig.min():.3e})")
 
@@ -160,7 +166,6 @@ class EKF:
         eye = np.eye(5)
         KH = K @ H
         I_KH = eye - KH
-        # Joseph form is retained to reduce loss of PSD under roundoff.
         P_new = _validate_covariance(
             I_KH @ P_pred @ I_KH.T + K @ R @ K.T,
             "P após update",
