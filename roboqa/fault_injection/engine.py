@@ -118,6 +118,7 @@ class FaultInjectionEngine:
                 and math.isfinite(envelope.acquisition_time)
                 and math.isfinite(envelope.arrival_time)
                 and scenario.contains(envelope.acquisition_time)
+                and operator.is_applicable(envelope, scenario)
             )
             if not eligible:
                 output.append((input_index, envelope))
