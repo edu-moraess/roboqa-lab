@@ -44,6 +44,7 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 4.4-A | ML Feature/Dataset Contracts | **VALIDATED — TARGETED + FULL SUITE, RUFF, COMPILEALL** |
 | 4.4-B | Temporal feature extraction from Fusion innovation telemetry | **VALIDATED — 42 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.4-C | Statistical anomaly baseline + optional Isolation Forest (advisory only) | **VALIDATED — 57 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL; scikit-learn 1.6.1** |
+| 4.4-D0 | Immutable anomaly evaluation contracts (overall/run/scenario) | **VALIDATED — FULL MANUAL COLAB PASS** |
 | 4.5-A | Fault-to-QA Integration Contracts | **VALIDATED — 52 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-B | Deterministic transport replay, watermark, deduplication and packet accounting | **VALIDATED — 19 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-C | Strict Measurement adapter from accepted transport envelopes | **VALIDATED — 10 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
@@ -135,6 +136,16 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Especificação: [Phase 4.4-C — Advisory Anomaly Baselines](docs/phase-4-4c-advisory-anomaly-baselines.md).
 - Validação manual no Colab: **57 testes direcionados passaram**, incluindo Isolation Forest com scikit-learn 1.6.1; suíte completa Pytest atingiu 100% com exit code 0; Ruff completo e compileall completos passaram. A saída da suíte completa não expôs contagem agregada inequívoca, portanto nenhum total foi inferido.
 
+### Anomaly Evaluation — Fase 4.4-D0 (FULL VALIDATION PASS)
+
+- Contratos imutáveis para matriz de confusão, métricas classificatórias, contagens e relatórios de avaliação.
+- Avaliação restrita a VALIDATION/TEST; TRAIN é rejeitado.
+- UNKNOWN fica fora de TP/FP/TN/FN; UNSCORABLE é contabilizado separadamente.
+- Razões indefinidas permanecem None, nunca zero.
+- Relatórios suportam escopos overall, por run e por cenário, com hashes SHA-256 e timestamp UTC.
+- Esta etapa não calcula métricas, não calibra thresholds e não altera modelos nem Quality Gate.
+- Especificação: [Phase 4.4-D0 — Anomaly Evaluation Contracts](docs/phase-4-4d0-anomaly-evaluation-contracts.md).
+
 ### Quality Contracts — Fase 4.0
 
 - `MetricObservation`: valor, unidade, escopo, amostras e disponibilidade explícita.
@@ -147,7 +158,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 
 ## Próximas etapas
 
-1. **4.4-D — Evaluation and Calibration:** avaliação por cenário/run, critérios de desempenho e robustez dos detectores.
+1. **4.4-D1–D3 — Evaluation and Calibration:** engine de avaliação, robustez por cenário/run e protocolo de calibração somente após evidência de avaliação.
 2. **4.4-E — Advisory Report:** explicabilidade, limitações, proveniência e relatório independente.
 3. **4.5 — Fault-to-QA Integration:** contratos, replay, adaptador, execução e propagação de evidências validados nas subfases 4.5-A a D3.
 4. **4.6 — Streamlit Control Center:** interface operacional de experimentos, telemetria e relatórios.
