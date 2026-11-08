@@ -22,9 +22,10 @@ HASH_A = "a" * 64
 HASH_B = "b" * 64
 
 
-def row(sample_id, split, signal, *, label=AnomalyReference.UNKNOWN, missing=False):
+def row(sample_id, split, signal, *, label=AnomalyReference.UNKNOWN, missing=False,
+        unit="unit"):
     feature = FeatureValue(
-        "signal", None if missing else signal, "unit",
+        "signal", None if missing else signal, unit,
         FeatureAvailability.MISSING if missing else FeatureAvailability.AVAILABLE,
         0 if missing else 1,
     )
@@ -36,14 +37,15 @@ def row(sample_id, split, signal, *, label=AnomalyReference.UNKNOWN, missing=Fal
 
 
 def dataset(*, validation_value=100.0, label=AnomalyReference.UNKNOWN,
-            missing_validation=False):
+            training_label=AnomalyReference.UNKNOWN, missing_validation=False,
+            validation_unit="unit"):
     train = [
-        row(f"train-{index}", DatasetSplit.TRAIN, float(index))
+        row(f"train-{index}", DatasetSplit.TRAIN, float(index), label=training_label)
         for index in range(12)
     ]
     validation = row(
         "validation-outlier", DatasetSplit.VALIDATION, validation_value,
-        label=label, missing=missing_validation,
+        label=label, missing=missing_validation, unit=validation_unit,
     )
     test = row("test-normal", DatasetSplit.TEST, 5.5)
     return FeatureDataset(
@@ -126,11 +128,22 @@ def test_rejects_training_data_without_variable_available_features():
 
 
 def test_model_does_not_consume_reference_labels():
-    normal = dataset(label=AnomalyReference.NORMAL)
-    anomalous = dataset(label=AnomalyReference.ANOMALOUS)
+    normal = dataset(training_label=AnomalyReference.NORMAL)
+    anomalous = dataset(training_label=AnomalyReference.ANOMALOUS)
     assert fit_statistical_baseline(normal).model_hash == fit_statistical_baseline(
         anomalous
     ).model_hash
+
+
+def test_scoring_rejects_feature_unit_mismatch_without_conversion():
+    data = dataset(validation_unit="km")
+    model = fit_statistical_baseline(data)
+    prediction = {
+        item.sample_id: item for item in score_statistical_baseline(model, data)
+    }["validation-outlier"]
+    assert prediction.decision is AnomalyDecision.UNSCORABLE
+    assert prediction.score is None
+    assert "unit mismatch" in prediction.reason
 
 
 def test_isolation_forest_is_reproducible_and_uses_train_only():
@@ -149,5 +162,7 @@ def test_isolation_forest_rejects_invalid_parameters():
     pytest.importorskip("sklearn")
     with pytest.raises(AnomalyDetectionError, match="random_state"):
         fit_isolation_forest(dataset(), random_state=True)
+    with pytest.raises(AnomalyDetectionError, match="random_state"):
+        fit_isolation_forest(dataset(), random_state=-1)
     with pytest.raises(AnomalyDetectionError, match="n_estimators"):
         fit_isolation_forest(dataset(), n_estimators=0)
