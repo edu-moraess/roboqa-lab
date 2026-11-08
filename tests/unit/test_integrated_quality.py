@@ -11,7 +11,6 @@ from roboqa.integration import (
     execute_fusion_schedule,
     replay_transport,
 )
-from roboqa.integration.execution import ExecutionDisposition
 from roboqa.qa import (
     MetricAvailability,
     MetricRule,
