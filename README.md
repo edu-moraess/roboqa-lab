@@ -6,7 +6,7 @@
 
 RoboQA Lab não é apenas uma demonstração de EKF. O objetivo é construir uma plataforma de engenharia para testar, observar e avaliar pipelines de percepção/estimação sensorial sob dados normais, falhas controladas e condições temporais adversas.
 
-> **Status do projeto:** implementação em andamento — Fases 1, 2.2, 3.1–3.3-E, 4.0, 4.1 e 4.2 validadas manualmente; Fase 4.3 também passou por pytest completo, Ruff e compileall no Colab. Fase 4.4-A está VALIDADA manualmente no Colab (30 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-A passou pela validação manual dos contratos de integração (52 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-B tem replay temporal determinístico VALIDADO manualmente no Colab (19 testes direcionados, suíte completa, Ruff e compileall). O produto completo ainda não está concluído.
+> **Status do projeto:** implementação em andamento — Fases 1, 2.2, 3.1–3.3-E, 4.0, 4.1 e 4.2 validadas manualmente; Fase 4.3 também passou por pytest completo, Ruff e compileall no Colab. Fase 4.4-A está VALIDADA manualmente no Colab (30 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-A passou pela validação manual dos contratos de integração (52 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-B tem replay temporal determinístico VALIDADO manualmente no Colab (19 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-C tem adaptador estrito implementado, aguardando validação manual. O produto completo ainda não está concluído.
 
 ## Visão da plataforma
 
@@ -133,6 +133,16 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 3. **4.4-D/E — Evaluation and Advisory Report:** avaliação por cenário/run, calibração, explicabilidade e relatório independente.
 4. **4.5 — Fault-to-QA Integration:** avaliar os efeitos das falhas no pipeline completo.
 5. **4.6 — Streamlit Control Center:** interface operacional de experimentos, telemetria e relatórios.
+
+
+### Phase 4.5-C — Measurement Adapter (implementation pending validation)
+
+- Adapts only replay-accepted envelopes into the strict normalized Measurement contract.
+- Requires explicit caller-supplied covariance R per sensor; no inferred noise model.
+- Maps acquisition_time to Measurement.t and preserves arrival/processing clocks and source identity as adapter metadata.
+- Validates sensor registry, dimensions, finite values, and covariance through the existing contracts.
+- Does not change run_filter or claim arrival-order Fusion execution.
+- Specification: [Phase 4.5-C — Strict Measurement Adapter](docs/phase-4-5c-measurement-adapter.md).
 
 ## Validação e desenvolvimento
 
