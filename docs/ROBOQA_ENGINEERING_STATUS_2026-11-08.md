@@ -332,3 +332,65 @@ Resume with a design/specification and tests-first checkpoint for a deterministi
 7. Integration tests proving how the chosen replay policy affects Fusion telemetry, Quality Metrics, and the deterministic Quality Gate.
 
 Keep the deterministic Quality Gate as the sole decision authority. Do not begin ML model training, add CI/GitHub Actions, alter `main`, or merge PR #14 without explicit authorization.
+
+
+---
+
+## 16. Engineering addendum — Phase 4.5-B deterministic transport replay (2026-11-08)
+
+### Implementation checkpoint — manual validation pending
+
+- Branch: `feat/temporal-replay-phase-4-5b`.
+- Base: Phase 4.5-A checkpoint `d4010790a4654d304a443aa7f5603af92b251926`.
+- PR #15: https://github.com/edu-moraess/roboqa-lab/pull/15 — open, Draft, unmerged; targets `feat/fault-to-qa-contracts-phase-4-5a`, not `main`.
+- Added `roboqa.integration.replay_transport` and immutable `TransportReplayResult`.
+- Implemented deterministic ARRIVAL_ORDER and ACQUISITION_ORDER batch ordering, canonical tie-breaking, source-identity validation, first-delivery-wins duplicate suppression, acquisition-time watermark lateness for ARRIVAL_ORDER, invalid three-clock/payload classification, dropped-source accounting, and SHA-256 provenance.
+- Exported replay API from `roboqa.integration`.
+- Added focused unit/adversarial tests in `tests/unit/test_transport_replay.py` and normative specification in `docs/phase-4-5b-deterministic-transport-replay.md`.
+- README roadmap now distinguishes implemented-but-unvalidated Phase 4.5-B from the planned adapter and end-to-end phases.
+- Current PR head at documentation checkpoint: `ebd21fad94b3e0c8b9f70519ff1e9a4ef5ef7ba4`.\n- Compare against Phase 4.5-A base: 7 commits ahead, 0 behind; six changed files.\n- **Validation status: PENDING MANUAL COLAB.** No pytest, Ruff, compileall, coverage, or runtime PASS is claimed for this branch yet.
+
+### Normative semantics
+
+- Identity: normalized `(sensor_id, source_id, sequence_number)`; duplicate source identities are rejected.
+- ARRIVAL_ORDER sorts by arrival time and uses `watermark = max_acquisition_seen - allowed_lateness_s`; first-seen event time strictly below the watermark is LATE. Equality is accepted.
+- ACQUISITION_ORDER is a deterministic offline event-time sort and does not classify late packets.
+- Deterministic ties use normalized sensor, source ID, sequence, and canonical envelope fingerprint.
+- First delivery wins; subsequent same-identity copies are DUPLICATE, even if the first copy was INVALID or LATE.
+- Invalid non-finite clocks/payload, arrival before acquisition, or processing before arrival are classified INVALID without mutating the raw envelope.
+- Source packets absent from delivered batch are DROPPED with arrival/processing set to None.
+- Accounting: delivered = accepted + duplicate + late + invalid; source = accepted + late + invalid + dropped.
+- This is offline batch replay only. It does not create a live streaming watermark or invoke Fusion.
+
+### Important integration boundary
+
+The existing `run_filter` still sorts normalized `Measurement.t`. The new ARRIVAL_ORDER replay output is not proof that Fusion processes in arrival order. The adapter and Fusion scheduling boundary remain a separate Phase 4.5-C/D task. The strict normalized `Measurement` schema and deterministic Quality Gate remain unchanged.
+
+### Manual Colab gate
+
+Run targeted replay tests, targeted Ruff and compileall, then full pytest, full Ruff, and full compileall. Keep PR #15 Draft until the actual outputs are reviewed. Do not infer test totals or coverage percentages.
+
+
+---
+
+## 17. Engineering addendum — Phase 4.5-B validation (2026-11-08)
+
+### Phase 4.5-B — Deterministic Transport Replay: VALIDATION PASS
+
+- Branch: `feat/temporal-replay-phase-4-5b`.
+- Code checkpoint used for manual validation: `9e239725775657ca0ac5bb65e3d6dd4e72fd2d5f`.
+- PR #15: https://github.com/edu-moraess/roboqa-lab/pull/15 — remains Draft, open, and unmerged; base remains `feat/fault-to-qa-contracts-phase-4-5a), not `main`.
+- Targeted replay tests: **19 passed**.
+- The first targeted run exposed three fixture errors: two packets had arrival timestamps earlier than acquisition timestamps. Production validation was retained; the three test fixtures were corrected to preserve causal acquisition/arrival order while maintaining out-of-order event time. The corrected replay suite passed all 19 tests.
+- Targeted Ruff and targeted compileall: **PASS**.
+- Full `pytest -q`: exit code 0, no failures reported. The captured output did not expose an unambiguous aggregate count; no total is inferred.
+- Full `ruff check roboqa tests`: **PASS**.
+- Full `python -m compileall -q roboqa tests`: **PASS**.
+- README and phase specification updated to record the evidence and preserve the explicit scope boundary.
+- Result: **VALIDATION PASS** for the deterministic offline transport replay and repository compatibility.
+- This does not validate a production RawMeasurementEnvelope-to-Measurement adapter, arrival-order execution inside Fusion, or end-to-end Fusion Telemetry → Quality Metrics → Quality Gate behavior.
+- No model training, inference, dataset downloads, CI/GitHub Actions, merge, or changes to `main` were performed.
+
+### Next engineering step
+
+Proceed to Phase 4.5-C/D with a separately specified adapter and Fusion scheduling boundary. Define how accepted envelopes map to normalized `Measurement`, whether event-time or arrival-time controls execution, and how late/duplicate/dropped decisions are carried into telemetry and QA. Add tests that prove the effect on Fusion telemetry, metrics, and deterministic Quality Gate before extending the product UI. Keep the Quality Gate as the sole decision authority.
