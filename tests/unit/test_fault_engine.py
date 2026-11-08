@@ -87,3 +87,26 @@ def test_engine_does_not_accept_normalized_measurements():
 def test_engine_validates_scenario_operator_parameters_before_processing():
     with pytest.raises(ContractError):
         FaultInjectionEngine().run(_envelopes(), _scenario(FaultType.DELAY, {"delay_s": -2}))
+
+
+def test_campaign_composes_scenarios_and_chains_provenance():
+    inputs = (RawMeasurementEnvelope("gps", 1.0, 1.1, 0, {"z": [1.0]}),)
+    bias = FaultScenario("bias-step", FaultType.BIAS, ("gps",), 0.0, 2.0, 10, {"offset": [2.0]})
+    delay = FaultScenario("delay-step", FaultType.DELAY, ("gps",), 0.0, 2.0, 11, {"delay_s": 0.5})
+
+    campaign = FaultInjectionEngine().run_campaign(inputs, (bias, delay))
+
+    assert campaign.input_envelopes == inputs
+    assert campaign.output_envelopes[0].payload["z"] == (3.0,)
+    assert campaign.output_envelopes[0].arrival_time == pytest.approx(1.6)
+    assert campaign.executions[0].provenance.parent_run_id is None
+    assert campaign.executions[1].provenance.parent_run_id == campaign.executions[0].provenance.run_id
+
+
+def test_campaign_rejects_empty_or_ambiguous_scenario_lists():
+    engine = FaultInjectionEngine()
+    with pytest.raises(ContractError, match="at least one scenario"):
+        engine.run_campaign(_envelopes(), ())
+    repeated = _scenario(FaultType.DELAY, {"delay_s": 0.1})
+    with pytest.raises(ContractError, match="unique"):
+        engine.run_campaign(_envelopes(), (repeated, repeated))
