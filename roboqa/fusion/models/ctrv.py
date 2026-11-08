@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import numpy as np
 
-# Threshold below which the rectilinear limit is used (rad/s).
+# Threshold below which the series expansion about omega=0 is used (rad/s).
 OMEGA_EPS = 1e-5
 
 
@@ -27,7 +27,14 @@ def normalize_angle(angle: float | np.ndarray) -> float | np.ndarray:
 
 
 def ctrv_f(x: np.ndarray, dt: float) -> np.ndarray:
-    """CTRV state transition."""
+    """
+    CTRV state transition.
+
+    For |omega| > OMEGA_EPS uses the exact circular-arc formula.
+    For |omega| <= OMEGA_EPS uses a second-order Taylor expansion of the
+    circular formula about omega=0, so that f and its Jacobian are
+    consistent across the branch boundary.
+    """
     x = np.asarray(x, dtype=np.float64).reshape(5)
     dt = float(dt)
     if dt < 0:
@@ -42,15 +49,16 @@ def ctrv_f(x: np.ndarray, dt: float) -> np.ndarray:
         py_n = py + (v / omega) * (np.cos(psi) - np.cos(psi + dpsi))
         psi_n = float(normalize_angle(psi + dpsi))
     else:
-        px_n = px + v * dt * np.cos(psi)
-        py_n = py + v * dt * np.sin(psi)
-        psi_n = psi
+        s, c = np.sin(psi), np.cos(psi)
+        px_n = px + v * dt * c - v * omega * (dt ** 2) / 2.0 * s
+        py_n = py + v * dt * s + v * omega * (dt ** 2) / 2.0 * c
+        psi_n = float(normalize_angle(psi + omega * dt))
 
     return np.array([px_n, py_n, psi_n, v, omega], dtype=np.float64)
 
 
 def ctrv_jacobian(x: np.ndarray, dt: float) -> np.ndarray:
-    """Analytic Jacobian F = df/dx of the CTRV transition."""
+    """Analytic Jacobian F = df/dx matching ctrv_f branching."""
     x = np.asarray(x, dtype=np.float64).reshape(5)
     dt = float(dt)
     if dt < 0:
@@ -75,10 +83,13 @@ def ctrv_jacobian(x: np.ndarray, dt: float) -> np.ndarray:
         F[2, 4] = dt
     else:
         s, c = np.sin(psi), np.cos(psi)
-        F[0, 2] = -v * dt * s
-        F[1, 2] = v * dt * c
-        F[0, 3] = dt * c
-        F[1, 3] = dt * s
+        F[0, 2] = -v * dt * s - v * omega * (dt ** 2) / 2.0 * c
+        F[1, 2] = v * dt * c - v * omega * (dt ** 2) / 2.0 * s
+        F[0, 3] = dt * c - omega * (dt ** 2) / 2.0 * s
+        F[1, 3] = dt * s + omega * (dt ** 2) / 2.0 * c
+        F[0, 4] = -v * (dt ** 2) / 2.0 * s
+        F[1, 4] = v * (dt ** 2) / 2.0 * c
+        F[2, 4] = dt
 
     return F
 
@@ -88,7 +99,21 @@ def process_noise_Q(
     sigma_a: float = 0.5,
     sigma_alpha: float = 0.1,
 ) -> np.ndarray:
-    """Discrete process-noise covariance for CTRV (diagonal PSD)."""
+    """
+    Discrete process-noise covariance for CTRV.
+
+    Stochastic model: continuous white noise on longitudinal acceleration
+    (sigma_a, m/s^2) and angular acceleration (sigma_alpha, rad/s^2).
+
+    Diagonal discretization:
+        Q_v   = sigma_a^2 * dt
+        Q_pos = sigma_a^2 * dt^3 / 3
+        Q_w   = sigma_alpha^2 * dt
+        Q_psi = sigma_alpha^2 * dt^3 / 3
+
+    Cross-terms omitted to guarantee exact PSD under floating-point;
+    coupling enters via the state Jacobian F during prediction.
+    """
     dt = float(dt)
     if dt < 0:
         raise ValueError(f"dt must be >= 0, got {dt}")
