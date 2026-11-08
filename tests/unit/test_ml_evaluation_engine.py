@@ -120,7 +120,7 @@ def test_hashes_are_deterministic():
 @pytest.mark.parametrize("split", [DatasetSplit.TRAIN, "validation"])
 def test_rejects_invalid_evaluation_split(split):
     dataset = make_dataset()
-    with pytest.raises(AnomalyEvaluationError):
+    with pytest.raises(AnomalyEvaluationError, match="VALIDATION or TEST"):
         evaluate_anomaly_predictions(
             dataset, make_predictions(dataset),
             evaluation_split=split, generated_at=GENERATED,
