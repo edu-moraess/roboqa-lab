@@ -163,7 +163,19 @@ def compute_quality_metrics(
                                      MetricScope.RUN, 0, MetricAvailability.MISSING))
     else:
         traces = np.trace(result.P, axis1=1, axis2=2)
-        if not np.all(np.isfinite(traces)) or np.any(traces < -1e-10):
+        covariance_valid = True
+        try:
+            for covariance in result.P:
+                scale = max(1.0, float(np.linalg.norm(covariance, ord=2)))
+                if not np.allclose(covariance, covariance.T, rtol=0.0, atol=1e-10 * scale):
+                    covariance_valid = False
+                    break
+                if float(np.linalg.eigvalsh(0.5 * (covariance + covariance.T)).min()) < -1e-10 * scale:
+                    covariance_valid = False
+                    break
+        except np.linalg.LinAlgError:
+            covariance_valid = False
+        if not covariance_valid or not np.all(np.isfinite(traces)):
             observations.append(_metric("covariance_trace_mean", None, "state_covariance_units",
                                          MetricScope.RUN, int(traces.size), MetricAvailability.INVALID))
         else:
