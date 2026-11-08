@@ -1,4 +1,4 @@
-"""Deterministic orchestration for fault injection over raw envelopes (Phases 3.2–3.3-C)."""
+"""Deterministic orchestration for fault injection over raw envelopes (Phases 3.2–3.3-D)."""
 from __future__ import annotations
 
 import math
@@ -182,7 +182,7 @@ class FaultInjectionEngine:
             if transformed != (envelope,):
                 applied += 1
             else:
-                # A stochastic operator may inspect a packet but leave it unchanged.
+                # A stochastic operator may inspect a packet and leave it unchanged.
                 skipped += 1
             output.extend((input_index, item) for item in transformed)
 
@@ -260,6 +260,61 @@ class FaultInjectionEngine:
         executions: list[FaultExecution] = []
         parent_run_id = None
         for scenario in selected:
+            execution = self.run(current, scenario, parent_run_id=parent_run_id)
+            executions.append(execution)
+            current = execution.output_envelopes
+            parent_run_id = execution.provenance.run_id
+
+        return FaultCampaignExecution(
+            input_envelopes=original,
+            output_envelopes=current,
+            executions=tuple(executions),
+        )
+
+    def run_overlapping_campaign(
+        self,
+        envelopes: Sequence[RawMeasurementEnvelope],
+        scenarios: Sequence[FaultScenario],
+    ) -> FaultCampaignExecution:
+        """Compose temporally overlapping faults in a stable, auditable order.
+
+        This models logical concurrency, not parallel threads or shared mutable
+        state. Scenarios are ordered by (start_time, end_time, scenario_id), then
+        applied serially to the prior output. Therefore conflicting operators
+        have explicit deterministic semantics: removals prevent later operators
+        from seeing that envelope, while duplicates are visible to later
+        operators. The execution tuple and parent_run_id chain record this order.
+        At least two scenario windows must overlap under half-open interval rules.
+        """
+        selected = tuple(scenarios)
+        if len(selected) < 2:
+            raise ContractError("an overlapping campaign requires at least two scenarios")
+        if any(not isinstance(item, FaultScenario) for item in selected):
+            raise ContractError("all campaign items must be FaultScenario instances")
+        scenario_ids = [item.scenario_id for item in selected]
+        if len(set(scenario_ids)) != len(scenario_ids):
+            raise ContractError("campaign scenario_id values must be unique")
+
+        has_overlap = any(
+            max(left.start_time, right.start_time) < min(left.end_time, right.end_time)
+            for index, left in enumerate(selected)
+            for right in selected[index + 1:]
+        )
+        if not has_overlap:
+            raise ContractError("at least one pair of scenario windows must overlap")
+
+        ordered = tuple(sorted(
+            selected,
+            key=lambda item: (item.start_time, item.end_time, item.scenario_id),
+        ))
+        original = tuple(envelopes)
+        if any(not isinstance(item, RawMeasurementEnvelope) for item in original):
+            raise ContractError("all inputs must be RawMeasurementEnvelope instances")
+
+        current = original
+        executions: list[FaultExecution] = []
+        parent_run_id = None
+        for scenario in ordered:
             execution = self.run(current, scenario, parent_run_id=parent_run_id)
             executions.append(execution)
             current = execution.output_envelopes
