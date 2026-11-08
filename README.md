@@ -6,7 +6,7 @@
 
 RoboQA Lab não é apenas uma demonstração de EKF. O objetivo é construir uma plataforma de engenharia para testar, observar e avaliar pipelines de percepção/estimação sensorial sob dados normais, falhas controladas e condições temporais adversas.
 
-> **Status do projeto:** implementação em andamento — Fases 1, 2.2, 3.1–3.3-E, 4.0, 4.1 e 4.2 validadas manualmente; Fase 4.3 também passou por pytest completo, Ruff e compileall no Colab. Fase 4.4-A está VALIDADA manualmente no Colab (30 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-A passou pela validação manual dos contratos de integração (52 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-B tem replay temporal determinístico VALIDADO manualmente no Colab (19 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-C tem adaptador estrito VALIDADO manualmente no Colab (10 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-D1 (15 testes direcionados) e D2 (32 testes direcionados; suíte completa, Ruff e compileall) também foram validadas manualmente. O produto completo ainda não está concluído.
+> **Status do projeto:** implementação em andamento — Fases 1, 2.2, 3.1–3.3-E, 4.0, 4.1 e 4.2 validadas manualmente; Fase 4.3 também passou por pytest completo, Ruff e compileall no Colab. Fases 4.4-A e 4.4-B estão VALIDADAS manualmente no Colab (4.4-A: 30 testes direcionados; 4.4-B: 42 testes direcionados; ambas com suíte completa, Ruff e compileall). Fase 4.5-A passou pela validação manual dos contratos de integração (52 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-B tem replay temporal determinístico VALIDADO manualmente no Colab (19 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-C tem adaptador estrito VALIDADO manualmente no Colab (10 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-D1 (15 testes direcionados) e D2 (32 testes direcionados; suíte completa, Ruff e compileall) também foram validadas manualmente. O produto completo ainda não está concluído.
 
 ## Visão da plataforma
 
@@ -42,7 +42,7 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 4.2 | Quality Metrics Engine | **VALIDATED — FULL SUITE, RUFF, COMPILEALL; 100% TARGETED COVERAGE** |
 | 4.3 | Deterministic Quality Gate | **VALIDATED — PYTEST, RUFF, COMPILEALL** |
 | 4.4-A | ML Feature/Dataset Contracts | **VALIDATED — TARGETED + FULL SUITE, RUFF, COMPILEALL** |
-| 4.4-B | Temporal feature extraction from Fusion innovation telemetry | **IMPLEMENTED — MANUAL COLAB VALIDATION PENDING** |
+| 4.4-B | Temporal feature extraction from Fusion innovation telemetry | **VALIDATED — 42 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-A | Fault-to-QA Integration Contracts | **VALIDATED — 52 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-B | Deterministic transport replay, watermark, deduplication and packet accounting | **VALIDATED — 19 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-C | Strict Measurement adapter from accepted transport envelopes | **VALIDATED — 10 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
@@ -110,7 +110,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Relatório imutável preserva métricas, findings, decisão, versão da política e hashes fornecidos.
 - Nenhum limiar universal é presumido; ML não participa da decisão.
 
-### ML Intelligence — Fase 4.4-A (VALIDATED)
+### ML Intelligence — Fases 4.4-A e 4.4-B (VALIDATED)
 
 - Contratos imutáveis para valores de features, amostras e datasets versionados.
 - Disponibilidade AVAILABLE/MISSING/INVALID explícita; sem imputação ou sentinelas numéricas.
@@ -133,7 +133,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 
 ## Próximas etapas
 
-1. **4.4-B — Feature Engineering:** implementação criada; validação manual no Colab pendente.
+1. **4.4-C — Anomaly Baselines:** baseline estatístico e detector consultivo, sem autoridade sobre o Quality Gate.
 2. **4.4-C — Anomaly Baselines:** baseline estatístico e detector consultivo, sem autoridade sobre o Quality Gate.
 3. **4.4-D/E — Evaluation and Advisory Report:** avaliação por cenário/run, calibração, explicabilidade e relatório independente.
 4. **4.5 — Fault-to-QA Integration:** contratos, replay, adaptador, execução e propagação de evidências validados nas subfases 4.5-A a D3.
@@ -251,7 +251,7 @@ Phase 4.5-C was manually validated in Colab on code checkpoint `77f0e6e267f08f86
 - Specification: [Phase 4.5-D3 — Integrated QA evidence propagation](docs/phase-4-5d3-integrated-qa-evidence.md).
 
 
-### Phase 4.4-B — Temporal Feature Engineering (implementation; validation pending)
+### Phase 4.4-B — Temporal Feature Engineering (VALIDATED)
 
 - Adds `extract_temporal_features` over immutable Fusion `InnovationTelemetry`.
 - Produces sensor-scoped fixed-duration windows anchored at the earliest telemetry timestamp.
@@ -262,4 +262,8 @@ Phase 4.5-C was manually validated in Colab on code checkpoint `77f0e6e267f08f86
 - No imputation, normalization, training, inference, downloads, or Quality Gate changes.
 - Tests: `tests/unit/test_ml_features.py`.
 - Specification: [Phase 4.4-B — Temporal Feature Engineering](docs/phase-4-4b-temporal-feature-engineering.md).
-- Status: **PENDING MANUAL COLAB VALIDATION**.
+- Manual Colab validation: 42 targeted tests passed; full `pytest -q` reached 100% with exit code 0; full Ruff passed; full compileall exited 0. The full-suite output did not expose an unambiguous aggregate test count, so none is inferred.
+- Initial full Ruff run found import ordering in `roboqa/ml/__init__.py`; fixed in commit `0e8baa11888fac1752695a12ac0285b346c17fd5`. All checks passed after syncing that exact checkpoint.
+- Result: **FULL VALIDATION PASS**. Evidence is from manual Colab, not GitHub Actions.
+- PR #20 remains Draft, open, and unmerged; base is `feat/qa-evidence-propagation-phase-4-5d3`, not `main`.
+- No training, inference, model downloads, Quality Gate changes, merge, or changes to `main`.
