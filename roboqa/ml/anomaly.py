@@ -200,7 +200,7 @@ def _matrix_for_scoring(
     for sample in dataset.samples:
         mapping = _sample_values(sample)
         missing = [
-            name for name, unit in zip(transform.feature_names, transform.feature_units)
+            name for name in transform.feature_names
             if name not in mapping
             or mapping[name].availability is not FeatureAvailability.AVAILABLE
             or mapping[name].value is None
