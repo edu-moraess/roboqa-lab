@@ -6,7 +6,7 @@
 
 RoboQA Lab não é apenas uma demonstração de EKF. O objetivo é construir uma plataforma de engenharia para testar, observar e avaliar pipelines de percepção/estimação sensorial sob dados normais, falhas controladas e condições temporais adversas.
 
-> **Status do projeto:** implementação em andamento — base validada até a **Fase 4.1**; Fase 4.2 validada manualmente no Colab; implementação da Fase 4.3 em validação. O produto completo ainda não está concluído.
+> **Status do projeto:** implementação em andamento — Fases 1, 2.2, 3.1–3.3-E, 4.0, 4.1 e 4.2 validadas manualmente; Fase 4.3 também passou por pytest completo, Ruff e compileall no Colab. Fase 4.4-A está implementada em branch isolada e aguarda validação manual. O produto completo ainda não está concluído.
 
 ## Visão da plataforma
 
@@ -40,8 +40,8 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 4.0 | Quality Contracts | **VALIDATED** |
 | 4.1 | Fusion Telemetry | **VALIDATED — 94% FUSION COVERAGE** |
 | 4.2 | Quality Metrics Engine | **VALIDATED — FULL SUITE, RUFF, COMPILEALL; 100% TARGETED COVERAGE** |
-| 4.3 | Deterministic Quality Gate | **IMPLEMENTED — COLAB VALIDATION PENDING** |
-| 4.4 | ML Intelligence | PLANNED |
+| 4.3 | Deterministic Quality Gate | **VALIDATED — PYTEST, RUFF, COMPILEALL** |
+| 4.4-A | ML Feature/Dataset Contracts | **IMPLEMENTED — COLAB VALIDATION PENDING** |
 | 4.5 | Fault-to-QA Integration | PLANNED |
 | 4.6 | Streamlit Control Center | PLANNED |
 
@@ -95,7 +95,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Média do traço da covariância e taxa de rejeição temporal.
 - Métricas ausentes/inválidas permanecem explicitamente classificadas; não são convertidas em zero.
 
-### Deterministic Quality Gate — Fase 4.3 (validação pendente)
+### Deterministic Quality Gate — Fase 4.3 (VALIDATED)
 
 - Avaliação determinística de métricas por política versionada e explícita.
 - Regras identificam métrica, escopo, sensor/janela e unidade.
@@ -104,7 +104,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Relatório imutável preserva métricas, findings, decisão, versão da política e hashes fornecidos.
 - Nenhum limiar universal é presumido; ML não participa da decisão.
 
-### Quality Contracts — Fase 4.0
+### ML Intelligence — Fase 4.4-A (implementada; validação pendente)\n\n- Contratos imutáveis para valores de features, amostras e datasets versionados.\n- Disponibilidade AVAILABLE/MISSING/INVALID explícita; sem imputação ou sentinelas numéricas.\n- Separação TRAIN/VALIDATION/TEST por execução, bloqueando vazamento de janelas do mesmo run.\n- Schema de features e unidades consistente entre amostras.\n- Anotações de referência NORMAL/ANOMALOUS/UNKNOWN mantidas como metadados de avaliação, fora das features.\n- Sem treinamento, inferência, downloads ou alteração da autoridade do Quality Gate.\n- Especificação: [Phase 4.4-A — ML Feature/Dataset Contracts](docs/phase-4-4a-ml-feature-dataset-contracts.md).\n\n### Quality Contracts — Fase 4.0
 
 - `MetricObservation`: valor, unidade, escopo, amostras e disponibilidade explícita.
 - `QualityFinding`: severidade, regra, mensagem e referências de evidência.
@@ -130,7 +130,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Sem GitHub Actions como autoridade de validação.
 - Sem treinamento, downloads automáticos de datasets/pesos ou builds pesados antes da auditoria e dos gates pertinentes.
 
-A Phase 4.1 foi validada manualmente no Colab (suíte completa aprovada, Ruff limpo e 94% de cobertura no Fusion Engine). A Phase 4.2 foi validada manualmente: suíte completa aprovada, Ruff limpo, compileall sem erros e 100% de cobertura direcionada de statements e branches em `metrics.py`. A Phase 4.3 está implementada em branch isolada e aguarda validação manual.
+A Phase 4.1 foi validada manualmente no Colab (suíte completa aprovada, Ruff limpo e 94% de cobertura no Fusion Engine). A Phase 4.2 foi validada manualmente: suíte completa aprovada, Ruff limpo, compileall sem erros e 100% de cobertura direcionada de statements e branches em `metrics.py`. A Phase 4.3 passou pela suíte completa de pytest, Ruff e compileall no Colab. A Fase 4.4-A está implementada em branch isolada e aguarda validação manual.
 
 ## Governança e integridade
 
