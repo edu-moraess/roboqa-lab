@@ -1,4 +1,4 @@
-"""Fault-to-QA integration contracts (Phase 4.5-A)."""
+"""Fault-to-QA integration contracts and deterministic transport replay."""
 from roboqa.integration.contracts import (
     DeliveryDecision,
     DeliveryDisposition,
@@ -7,6 +7,7 @@ from roboqa.integration.contracts import (
     TransportOrderingPolicy,
     TransportReplaySummary,
 )
+from roboqa.integration.replay import TransportReplayResult, replay_transport
 
 __all__ = [
     "DeliveryDecision",
@@ -15,4 +16,6 @@ __all__ = [
     "IntegrationContractError",
     "TransportOrderingPolicy",
     "TransportReplaySummary",
+    "TransportReplayResult",
+    "replay_transport",
 ]
