@@ -6,6 +6,8 @@ Policy:
 - Measurements sorted by (t, sensor_name) for deterministic ordering.
 - Out-of-order after start (t < current filter time) rejected with diagnosis.
 - Original Measurement / GroundTruth objects are never mutated.
+- Initialization uses a high-uncertainty prior (or caller-provided x0/P0).
+  No measurement is consumed twice (no double-counting of first GPS).
 """
 
 from __future__ import annotations
@@ -24,27 +26,24 @@ def _default_x0_P0(
     measurements: Sequence[Measurement],
     x0: Optional[np.ndarray],
     P0: Optional[np.ndarray],
-) -> tuple[np.ndarray, np.ndarray, list[str]]:
+) -> tuple[np.ndarray, np.ndarray, list[str], Optional[int]]:
+    """Build initial state/covariance without double-counting measurements."""
     warnings: list[str] = []
+    skip_id: Optional[int] = None
+
     if x0 is not None and P0 is not None:
         return (
             np.asarray(x0, dtype=np.float64).reshape(5),
             np.asarray(P0, dtype=np.float64).reshape(5, 5),
             warnings,
+            skip_id,
         )
 
     x = np.zeros(5, dtype=np.float64)
-    P = np.diag([25.0, 25.0, 0.5, 5.0, 0.25]).astype(np.float64)
+    P = np.diag([25.0, 25.0, 0.5, 4.0, 0.25]).astype(np.float64)
 
-    gps = [m for m in measurements if m.sensor.strip().lower() == "gps"]
-    if gps:
-        m0 = min(gps, key=lambda m: m.t)
-        x[0] = float(m0.z[0])
-        x[1] = float(m0.z[1])
-        if m0.R.shape == (2, 2):
-            P[0, 0] = max(float(m0.R[0, 0]), 1.0)
-            P[1, 1] = max(float(m0.R[1, 1]), 1.0)
-    else:
+    has_gps = any(m.sensor.strip().lower() == "gps" for m in measurements)
+    if not has_gps:
         warnings.append(
             "Nenhum GPS na sequência; inicialização de posição em (0,0) com alta incerteza."
         )
@@ -54,7 +53,7 @@ def _default_x0_P0(
     if P0 is not None:
         P = np.asarray(P0, dtype=np.float64).reshape(5, 5)
 
-    return x, P, warnings
+    return x, P, warnings, skip_id
 
 
 def run_filter(
@@ -98,7 +97,7 @@ def run_filter(
 
     ordered = sorted(measurements, key=lambda m: (m.t, m.sensor))
 
-    x_init, P_init, init_warns = _default_x0_P0(ordered, x0, P0)
+    x_init, P_init, init_warns, _skip_id = _default_x0_P0(ordered, x0, P0)
     diag.warnings.extend(init_warns)
 
     try:

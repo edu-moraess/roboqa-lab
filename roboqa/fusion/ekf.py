@@ -4,7 +4,7 @@ Fase 2 — Fusion Engine
 ARQTECH LABS
 
 Uses Joseph-form covariance update for numerical robustness.
-Does not silently regularize invalid covariances.
+predict/update are atomic: state is committed only after full validation.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from roboqa.fusion.sensors import get_sensor_model, validate_measurement_for_fus
 
 
 class EKFNumericalError(RuntimeError):
-    """Raised when a numerical failure is detected (singular S, non-finite, etc.)."""
+    """Raised when a numerical failure is detected."""
 
 
 class EKF:
@@ -70,6 +70,7 @@ class EKF:
         self._t = float(t)
 
     def predict(self, t_next: float) -> None:
+        """Propagate state and covariance to t_next (atomic)."""
         if self._t is None:
             raise SchemaError("EKF sem tempo inicial; chame set_time() antes de predict.")
         if not np.isfinite(t_next):
@@ -85,13 +86,19 @@ class EKF:
 
         F = ctrv_jacobian(self.x, dt)
         Q = process_noise_Q(dt, self.sigma_a, self.sigma_alpha)
-        self.x = ctrv_f(self.x, dt)
-        self.P = F @ self.P @ F.T + Q
-        self.P = 0.5 * (self.P + self.P.T)
+        x_new = ctrv_f(self.x, dt)
+        P_new = F @ self.P @ F.T + Q
+        P_new = 0.5 * (P_new + P_new.T)
+        if not np.all(np.isfinite(x_new)):
+            raise EKFNumericalError("Estado não-finito após predict.")
+        if not np.all(np.isfinite(P_new)):
+            raise EKFNumericalError("Covariância não-finita após predict.")
+        self.x = x_new
+        self.P = P_new
         self._t = float(t_next)
-        self._assert_finite("predict")
 
     def update(self, measurement: Measurement) -> None:
+        """Measurement update (atomic)."""
         validate_measurement_for_fusion(measurement)
         h_fn, H_fn, _ = get_sensor_model(measurement.sensor)
 
@@ -99,33 +106,36 @@ class EKF:
         R = np.array(measurement.R, dtype=np.float64, copy=True)
 
         x_pred = self.x
+        P_pred = self.P
         H = H_fn(x_pred)
         z_hat = h_fn(x_pred)
         y = z - z_hat
 
-        S = H @ self.P @ H.T + R
+        S = H @ P_pred @ H.T + R
         S = 0.5 * (S + S.T)
 
         try:
-            PHt = self.P @ H.T
+            PHt = P_pred @ H.T
             K = np.linalg.solve(S, PHt.T).T
         except np.linalg.LinAlgError as e:
             raise EKFNumericalError(
                 f"Matriz de inovação singular/mal condicionada (sensor={measurement.sensor}): {e}"
             ) from e
 
-        self.x = x_pred + K @ y
-        self.x[2] = float(normalize_angle(self.x[2]))
+        x_new = x_pred + K @ y
+        x_new = x_new.copy()
+        x_new[2] = float(normalize_angle(x_new[2]))
 
         eye = np.eye(5)
         KH = K @ H
         I_KH = eye - KH
-        self.P = I_KH @ self.P @ I_KH.T + K @ R @ K.T
-        self.P = 0.5 * (self.P + self.P.T)
-        self._assert_finite("update")
+        P_new = I_KH @ P_pred @ I_KH.T + K @ R @ K.T
+        P_new = 0.5 * (P_new + P_new.T)
 
-    def _assert_finite(self, where: str) -> None:
-        if not np.all(np.isfinite(self.x)):
-            raise EKFNumericalError(f"Estado não-finito após {where}.")
-        if not np.all(np.isfinite(self.P)):
-            raise EKFNumericalError(f"Covariância não-finita após {where}.")
+        if not np.all(np.isfinite(x_new)):
+            raise EKFNumericalError("Estado não-finito após update.")
+        if not np.all(np.isfinite(P_new)):
+            raise EKFNumericalError("Covariância não-finita após update.")
+
+        self.x = x_new
+        self.P = P_new
