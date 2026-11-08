@@ -56,7 +56,8 @@ def test_nonfinite_processing_clock_is_preserved_and_diagnosed():
     envelope = _envelope(processing=float("nan"))
 
     assert math.isnan(envelope.processing_time)
-    assert not envelope.timestamps_finite
+    assert envelope.timestamps_finite
+    assert not envelope.processing_timestamp_finite
     assert not envelope.is_valid_candidate
     assert envelope.processing_wait_s is None
     assert envelope.end_to_end_latency_s is None
@@ -136,4 +137,51 @@ def test_duplicate_operator_preserves_processing_clock_on_both_records():
     output = FaultInjectionEngine().run((envelope,), scenario).output_envelopes
 
     assert len(output) == 2
+    assert all(item.processing_time == 1.35 for item in output)
+
+
+def test_nonfinite_processing_clock_does_not_block_transport_fault_injection():
+    envelope = _envelope(processing=float("nan"))
+    scenario = FaultScenario(
+        "invalid-processing-clock",
+        FaultType.DELAY,
+        ("gps",),
+        0.0,
+        2.0,
+        42,
+        {"delay_s": 0.5},
+    )
+
+    execution = FaultInjectionEngine().run((envelope,), scenario)
+
+    assert execution.result.applied_count == 1
+    assert math.isnan(execution.output_envelopes[0].processing_time)
+    assert execution.result.events[0].processing_time is None
+    assert "non_finite_processing_time" in execution.output_envelopes[0].temporal_diagnostics
+
+
+@pytest.mark.parametrize(
+    ("fault_type", "parameters"),
+    [
+        (FaultType.BIAS, {"offset": [1.0, -1.0]}),
+        (FaultType.OUTLIER, {"sigma": 0.5, "index": 0}),
+        (FaultType.INVALID_PAYLOAD, {"kind": "nan", "index": 0}),
+        (FaultType.OUT_OF_ORDER, {"shift_s": 0.1}),
+    ],
+)
+def test_payload_and_arrival_operators_preserve_processing_clock(fault_type, parameters):
+    envelope = _envelope(processing=1.35)
+    scenario = FaultScenario(
+        f"preserve-processing-{fault_type.value}",
+        fault_type,
+        ("gps",),
+        0.0,
+        2.0,
+        42,
+        parameters,
+    )
+
+    output = FaultInjectionEngine().run((envelope,), scenario).output_envelopes
+
+    assert output
     assert all(item.processing_time == 1.35 for item in output)
