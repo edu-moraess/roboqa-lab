@@ -213,3 +213,34 @@ def test_rejects_invalid_schedule_hash_on_direct_construction():
             entries=schedule.entries,
             schedule_hash="0" * 64,
         )
+
+
+def test_rejects_measurement_acquisition_time_mismatch():
+    source = (packet(1, "gps", 1.0, 1.1, (1.0, 2.0)),)
+    replay = replay_transport(source, source)
+    adapted = adapt(replay)
+    forged_measurement = type(adapted[0].measurement)(
+        t=1.05, sensor="gps", z=np.array([1.0, 2.0]), R=np.eye(2)
+    )
+    forged = AdaptedMeasurement(
+        identity=adapted[0].identity,
+        measurement=forged_measurement,
+        arrival_time=adapted[0].arrival_time,
+        processing_time=adapted[0].processing_time,
+    )
+    with pytest.raises(FusionSchedulingError, match="acquisition_time"):
+        build_fusion_schedule(replay, (forged,))
+
+
+def test_rejects_adapter_processing_clock_mismatch():
+    source = (packet(1, "gps", 1.0, 1.1, (1.0, 2.0), processing=1.2),)
+    replay = replay_transport(source, source)
+    adapted = adapt(replay)
+    forged = AdaptedMeasurement(
+        identity=adapted[0].identity,
+        measurement=adapted[0].measurement,
+        arrival_time=adapted[0].arrival_time,
+        processing_time=1.25,
+    )
+    with pytest.raises(FusionSchedulingError, match="processing_time"):
+        build_fusion_schedule(replay, (forged,))
