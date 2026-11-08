@@ -20,7 +20,6 @@ from roboqa.ml.contracts import (
     DatasetSplit,
     FeatureAvailability,
     FeatureDataset,
-    FeatureDatasetError,
 )
 
 
@@ -70,6 +69,7 @@ class _TrainingTransform:
     feature_names: tuple[str, ...]
     medians: tuple[float, ...]
     scales: tuple[float, ...]
+    feature_units: tuple[str, ...]
     training_sample_ids: tuple[str, ...]
     training_run_ids: tuple[str, ...]
     training_data_hash: str
@@ -93,6 +93,7 @@ class IsolationForestBaseline:
     contamination: float
     random_state: int
     n_estimators: int
+    library_version: str
     threshold: float
     model_hash: str
     estimator: Any
@@ -159,11 +160,15 @@ def _training_matrix(dataset: FeatureDataset) -> tuple[_TrainingTransform, np.nd
     matrix = matrix[:, variable]
     standardized = (matrix - medians) / scales
 
+    feature_units = tuple(maps[0][name].unit for name in eligible)
     train_document = [
         {
             "sample_id": sample.sample_id,
             "run_id": sample.run_id,
-            "features": [[name, float(value)] for name, value in zip(eligible, row)],
+            "features": [
+                [name, unit, float(value)]
+                for name, unit, value in zip(eligible, feature_units, row)
+            ],
         }
         for sample, row in zip(training, matrix)
     ]
@@ -174,6 +179,7 @@ def _training_matrix(dataset: FeatureDataset) -> tuple[_TrainingTransform, np.nd
         feature_names=eligible,
         medians=tuple(float(value) for value in medians),
         scales=tuple(float(value) for value in scales),
+        feature_units=feature_units,
         training_sample_ids=tuple(sample.sample_id for sample in training),
         training_run_ids=tuple(sorted({sample.run_id for sample in training})),
         training_data_hash=train_hash,
@@ -194,14 +200,23 @@ def _matrix_for_scoring(
     for sample in dataset.samples:
         mapping = _sample_values(sample)
         missing = [
-            name for name in transform.feature_names
+            name for name, unit in zip(transform.feature_names, transform.feature_units)
             if name not in mapping
             or mapping[name].availability is not FeatureAvailability.AVAILABLE
             or mapping[name].value is None
         ]
-        if missing:
+        unit_mismatches = [
+            name for name, unit in zip(transform.feature_names, transform.feature_units)
+            if name in mapping and mapping[name].unit != unit
+        ]
+        if missing or unit_mismatches:
             scorable.append(False)
-            reasons.append("required training feature unavailable: " + ", ".join(missing))
+            details = []
+            if missing:
+                details.append("required training feature unavailable: " + ", ".join(missing))
+            if unit_mismatches:
+                details.append("feature unit mismatch: " + ", ".join(unit_mismatches))
+            reasons.append("; ".join(details))
             rows.append(np.zeros(len(transform.feature_names), dtype=np.float64))
             continue
         values = np.asarray(
@@ -228,6 +243,7 @@ def _model_hash(method: str, transform: _TrainingTransform, parameters: dict[str
         "feature_names": transform.feature_names,
         "medians": transform.medians,
         "scales": transform.scales,
+        "feature_units": transform.feature_units,
         "parameters": parameters,
     }
     return hashlib.sha256(json.dumps(
@@ -286,11 +302,16 @@ def fit_isolation_forest(
 ) -> IsolationForestBaseline:
     """Fit optional scikit-learn Isolation Forest on TRAIN samples only."""
     fraction = _validate_contamination(contamination)
-    if isinstance(random_state, bool) or not isinstance(random_state, int):
-        raise AnomalyDetectionError("random_state must be an integer")
+    if (
+        isinstance(random_state, bool)
+        or not isinstance(random_state, int)
+        or not 0 <= random_state <= 2**32 - 1
+    ):
+        raise AnomalyDetectionError("random_state must be an integer in [0, 2**32 - 1]")
     if isinstance(n_estimators, bool) or not isinstance(n_estimators, int) or n_estimators < 1:
         raise AnomalyDetectionError("n_estimators must be a positive integer")
     try:
+        import sklearn
         from sklearn.ensemble import IsolationForest
     except ImportError as exc:
         raise AnomalyDetectionError(
@@ -312,11 +333,13 @@ def fit_isolation_forest(
             "contamination": fraction,
             "random_state": random_state,
             "n_estimators": n_estimators,
+            "library_version": sklearn.__version__,
             "threshold": threshold,
         },
     )
     return IsolationForestBaseline(
-        transform, fraction, random_state, n_estimators, threshold, model_hash, estimator
+        transform, fraction, random_state, n_estimators, sklearn.__version__,
+        threshold, model_hash, estimator
     )
 
 
