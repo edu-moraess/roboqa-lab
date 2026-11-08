@@ -44,7 +44,7 @@ def test_engine_reorders_by_arrival_but_retains_sequence_identity():
         RawMeasurementEnvelope("gps", 1.0, 1.0, 0, {"z": [1.0]}),
         RawMeasurementEnvelope("gps", 2.0, 2.0, 1, {"z": [2.0]}),
     )
-    scenario = _scenario(FaultType.OUT_OF_ORDER, {"shift_s": -2.0})
+    scenario = _scenario(FaultType.OUT_OF_ORDER, {"shift_s": -2.0, "sequence_numbers": [1]})
     execution = FaultInjectionEngine().run(inputs, scenario)
     assert [item.sequence_number for item in execution.output_envelopes] == [1, 0]
 
