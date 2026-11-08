@@ -194,3 +194,31 @@ Run the documented Phase 4.2 Colab validation. Fix any evidence-backed failures 
 - The targeted test run associated with this coverage report completed successfully.
 - **Overall Phase 4.2 validation remains PENDING** until the complete pytest suite, Ruff, and compileall outputs are reviewed. No claim is made here that those checks passed.
 - PR #11 remains Draft and unmerged. Phase 4.3 remains gated on complete Phase 4.2 validation.
+
+---
+
+## 11. Engineering addendum — Phase 4.2 validation and Phase 4.3 implementation (2026-11-08)
+
+### Phase 4.2 — Quality Metrics Engine: VALIDATION PASS
+
+- Branch: `feat/quality-metrics-phase-4-2`
+- Final checkpoint inherited by Phase 4.3: `661167cc8569693dc24bf749063afed6dd540f4c`
+- Manual Colab evidence supplied: complete `pytest -q` reached 100% with no reported failures; Ruff reported `All checks passed!`; `python -m compileall -q roboqa tests` completed without errors.
+- Targeted coverage for `roboqa/qa/metrics.py`: 100% statements and branches (142 statements, 0 missed; 76 branches, 0 partial).
+- Exact total test count is not recorded because the captured terminal output did not expose a final aggregate count.
+- Result: **VALIDATION PASS**. PR #11 remains open, Draft, and unmerged.
+
+### Phase 4.3 — Deterministic Quality Gate: IMPLEMENTED, VALIDATION PENDING
+
+- Branch: `feat/deterministic-quality-gate-phase-4-3`
+- Base: Phase 4.2 checkpoint `661167cc8569693dc24bf749063afed6dd540f4c`.
+- PR #12: https://github.com/edu-moraess/roboqa-lab/pull/12
+- Added `MetricRule`, `QualityGatePolicy`, `QualityGateError`, and `evaluate_quality_gate`.
+- Rules match exact metric identity (name, scope, optional sensor/window) and can validate units.
+- Explicit hard bounds produce FAIL; warning bands produce PASS_WITH_WARNINGS.
+- Required missing/invalid evidence or required unit mismatch produces BLOCKED. Optional missing/invalid evidence produces a warning. Decision precedence is BLOCKED, FAIL, PASS_WITH_WARNINGS, PASS.
+- The output is the existing immutable `QualityReport`, preserving all input observations, findings, policy version, UTC timestamp, and caller-supplied SHA-256 provenance.
+- Unconfigured observations remain in the report but are not implicitly judged. No universal thresholds are invented; no ML authority is introduced.
+- Added unit tests and policy/API documentation.
+- Validation: **PENDING MANUAL COLAB**. Do not mark this phase complete until compileall, Ruff, targeted tests, and the full suite are reviewed.
+- PR #12 remains Draft; no PR was merged and `main` was not changed.
