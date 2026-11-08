@@ -1,4 +1,4 @@
-"""Unit tests — EKF predict/update."""
+"""Unit tests — EKF predict/update and numerical invariants."""
 
 import numpy as np
 import pytest
@@ -13,6 +13,10 @@ def _ekf():
     ekf = EKF(x0, P0, sigma_a=0.5, sigma_alpha=0.1)
     ekf.set_time(0.0)
     return ekf
+
+
+def _snapshot(ekf):
+    return ekf.x.copy(), ekf.P.copy(), ekf.t
 
 
 def test_predict_moves_state():
@@ -57,6 +61,24 @@ def test_unknown_sensor_raises():
         ekf.update(m)
 
 
+def test_update_rejects_timestamp_mismatch_without_mutation():
+    ekf = _ekf()
+    before = _snapshot(ekf)
+    m = Measurement(t=0.1, sensor="gps", z=np.array([0.5, 0.1]), R=np.eye(2))
+    with pytest.raises(SchemaError, match="Timestamp"):
+        ekf.update(m)
+    np.testing.assert_array_equal(ekf.x, before[0])
+    np.testing.assert_array_equal(ekf.P, before[1])
+    assert ekf.t == before[2]
+
+
+def test_update_requires_initialized_time():
+    ekf = EKF(np.zeros(5), np.eye(5))
+    m = Measurement(t=0.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
+    with pytest.raises(SchemaError, match="tempo inicial"):
+        ekf.update(m)
+
+
 def test_covariance_stays_symmetric_psd():
     ekf = _ekf()
     for t in [0.1, 0.2, 0.3]:
@@ -67,9 +89,32 @@ def test_covariance_stays_symmetric_psd():
             R=np.eye(2) * 1.0,
         )
         ekf.update(m)
-    assert np.allclose(ekf.P, ekf.P.T, atol=1e-8)
+    assert np.allclose(ekf.P, ekf.P.T, atol=1e-10)
     eig = np.linalg.eigvalsh(ekf.P)
-    assert np.all(eig >= -1e-6)
+    assert np.all(eig >= -1e-10)
+
+
+def test_predict_rejects_non_psd_candidate_atomically():
+    ekf = _ekf()
+    ekf.P = np.diag([1.0, 1.0, 1.0, 1.0, -10.0])
+    before = _snapshot(ekf)
+    with pytest.raises(EKFNumericalError, match="not PSD"):
+        ekf.predict(0.1)
+    np.testing.assert_array_equal(ekf.x, before[0])
+    np.testing.assert_array_equal(ekf.P, before[1])
+    assert ekf.t == before[2]
+
+
+def test_update_rejects_non_psd_candidate_atomically():
+    ekf = _ekf()
+    ekf.P = np.diag([1.0, 1.0, 1.0, 1.0, -10.0])
+    before = _snapshot(ekf)
+    m = Measurement(t=0.0, sensor="gps", z=np.array([1.0, 2.0]), R=np.eye(2))
+    with pytest.raises(EKFNumericalError, match="not PSD"):
+        ekf.update(m)
+    np.testing.assert_array_equal(ekf.x, before[0])
+    np.testing.assert_array_equal(ekf.P, before[1])
+    assert ekf.t == before[2]
 
 
 def test_invalid_P0_raises():
@@ -80,7 +125,7 @@ def test_invalid_P0_raises():
 def test_does_not_mutate_measurement():
     ekf = _ekf()
     z = np.array([1.0, 2.0])
-    R = np.eye(2) * 1.0
+    R = np.eye(2)
     m = Measurement(t=0.0, sensor="gps", z=z, R=R)
     z_before = m.z.copy()
     ekf.update(m)
@@ -104,3 +149,9 @@ def test_P0_nonsymmetric():
     P[0, 1] = 0.5
     with pytest.raises(SchemaError):
         EKF(np.zeros(5), P)
+
+
+@pytest.mark.parametrize("sigma_a,sigma_alpha", [(-1.0, 0.1), (0.5, -0.1), (np.nan, 0.1), (0.5, np.inf)])
+def test_invalid_process_noise_parameters_rejected(sigma_a, sigma_alpha):
+    with pytest.raises(SchemaError):
+        EKF(np.zeros(5), np.eye(5), sigma_a=sigma_a, sigma_alpha=sigma_alpha)
