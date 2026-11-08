@@ -12,8 +12,9 @@ Quality Gate, or Streamlit.
 | Fault type | Operator | Parameters | Behavior |
 |---|---|---|---|
 | `SENSOR_DROPOUT` | `dropout` | none | Removes eligible envelopes |
-| `PACKET_LOSS` | `packet-loss` | none | Removes eligible packets |
-| `DELAY` | `delay` | `delay_s >= 0` | Increases arrival time; acquisition time is preserved |
+| `PACKET_LOSS` | `packet-loss` | `loss_probability` in [0, 1] | Independent Bernoulli loss per eligible packet using the scenario seed |
+| `INTERMITTENT_OUTAGE` | `burst-loss` | `burst_intervals_s`: sorted, non-overlapping `[start, end)` intervals | Removes packets acquired inside explicitly declared burst windows |
+| `DELAY` | `delay` | constant `delay_s`; uniform `min_delay_s`/`max_delay_s`; exponential `mean_delay_s` | Adds a non-negative sampled transport delay; acquisition time is preserved |
 | `OUT_OF_ORDER` | `arrival-shift` | finite `shift_s`, optional `sequence_numbers` | Shifts selected packet arrival times; negative values can reorder a selected subset |
 | `BIAS` | `bias` | `offset` vector | Adds component-wise offset to payload `z` |
 | `OUTLIER` | `outlier` | `sigma > 0`, optional `index` | Adds seeded Gaussian perturbation to one `z` component |
@@ -21,6 +22,30 @@ Quality Gate, or Streamlit.
 | `DUPLICATE` | `duplicate` | optional `duplicate_delay_s >= 0` | Emits original plus duplicate with the same source sequence identity |
 
 Other values in `FaultType` are deliberately unsupported in this phase and fail closed.
+
+## Transport fault semantics (Phase 3.3-C)
+
+`PACKET_LOSS` performs an independent Bernoulli trial for each eligible envelope.
+`loss_probability=0` preserves all packets; `loss_probability=1` removes all
+eligible packets. Intermediate probabilities use the scenario-local NumPy RNG,
+so the same input order, parameters, and seed reproduce the same decisions.
+A packet retained by the stochastic operator is recorded with
+`FaultEvent.affected=false` and counted as skipped; a run with no actual changes
+is reported as `NOT_APPLICABLE`.
+
+`INTERMITTENT_OUTAGE` models deterministic burst windows. Each interval is
+start-inclusive and end-exclusive and is evaluated against acquisition time.
+Intervals must be sorted and non-overlapping. Packets outside the declared
+windows are not candidates for the operator and remain unchanged. This models
+explicit outage bursts, not a learned or stateful Gilbert-Elliott channel.
+
+`DELAY` preserves the legacy constant-delay parameter `delay_s`. It additionally
+supports `distribution="uniform"` with non-negative `min_delay_s` and
+`max_delay_s`, or `distribution="exponential"` with positive `mean_delay_s`.
+The RNG is local to the scenario. All sampled delays are non-negative; only
+arrival time changes. Arrival sorting in the engine can consequently expose
+reordering when packets receive different delays. The existing `OUT_OF_ORDER`
+arrival-shift operator remains available for explicit selected-packet shifts.
 
 ## Temporal and ordering semantics
 
