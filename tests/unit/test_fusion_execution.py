@@ -153,3 +153,31 @@ def test_non_updated_outcome_requires_reason_and_cannot_carry_telemetry():
             acquisition_time=entry.measurement.t,
             disposition=ExecutionDisposition.FAILED,
         )
+
+
+def test_execution_hash_preserves_nonfinite_invalid_replay_clock_evidence():
+    accepted = packet(1, "gps", 0.0, (1.0, 2.0))
+    invalid = RawMeasurementEnvelope(
+        sensor_id="gps",
+        source_id="execution-test",
+        sequence_number=2,
+        acquisition_time=1.0,
+        arrival_time=float("nan"),
+        processing_time=None,
+        payload=(3.0, 4.0),
+    )
+    replay = replay_transport(
+        (accepted, invalid),
+        (accepted, invalid),
+        ordering_policy=TransportOrderingPolicy.ARRIVAL_ORDER,
+    )
+    adapted = adapt_accepted_envelopes(
+        replay, sensor_covariances={"gps": np.eye(2)}
+    )
+    schedule = build_fusion_schedule(replay, adapted)
+    execution = execute_fusion_schedule(schedule)
+
+    assert replay.summary.invalid_count == 1
+    assert execution.record.updated_count == 1
+    assert execution.record.replay_summary.invalid_count == 1
+    assert execution.record.execution_hash == execution.record.compute_hash()
