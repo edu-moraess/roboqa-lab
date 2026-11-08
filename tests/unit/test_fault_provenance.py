@@ -2,6 +2,7 @@ import pytest
 
 from roboqa.fault_injection import (
     ContractError,
+    FaultProvenance,
     build_configuration_hash,
     canonical_json,
     sha256_digest,
@@ -35,3 +36,30 @@ def test_timestamp_requires_timezone():
     assert validate_utc_timestamp("2026-11-08T02:00:00Z")
     with pytest.raises(ContractError):
         validate_utc_timestamp("2026-11-08T02:00:00")
+
+
+def test_fault_provenance_validates_hashes_seed_and_timezone():
+    digest = "a" * 64
+    record = FaultProvenance(
+        run_id="run-1",
+        scenario_id="scenario-1",
+        source_hash=digest,
+        output_hash="b" * 64,
+        operator_version="delay@1.0",
+        configuration_hash="c" * 64,
+        seed=42,
+        created_at="2026-11-08T02:00:00Z",
+    )
+    assert record.seed == 42
+    with pytest.raises(ContractError):
+        FaultProvenance(
+            run_id="run-1", scenario_id="scenario-1", source_hash="bad",
+            output_hash=digest, operator_version="v1", configuration_hash=digest,
+            seed=42, created_at="2026-11-08T02:00:00Z",
+        )
+    with pytest.raises(ContractError):
+        FaultProvenance(
+            run_id="run-1", scenario_id="scenario-1", source_hash=digest,
+            output_hash=digest, operator_version="v1", configuration_hash=digest,
+            seed=42, created_at="2026-11-08T02:00:00",
+        )

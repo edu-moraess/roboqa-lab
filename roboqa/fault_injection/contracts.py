@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import math
 from types import MappingProxyType
-from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
+from typing import Any, Mapping, Protocol, runtime_checkable
 
 
 class ContractError(ValueError):
@@ -150,12 +150,15 @@ class FaultEvent:
     severity: float = 1.0
     affected: bool = True
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    processing_time: float | None = None
 
     def __post_init__(self) -> None:
         for name in ("event_id", "scenario_id", "operator_id", "sensor_id"):
             object.__setattr__(self, name, _non_empty(getattr(self, name), name))
         object.__setattr__(self, "acquisition_time", _finite(self.acquisition_time, "acquisition_time"))
         object.__setattr__(self, "arrival_time", _finite(self.arrival_time, "arrival_time"))
+        if self.processing_time is not None:
+            object.__setattr__(self, "processing_time", _finite(self.processing_time, "processing_time"))
         if isinstance(self.sequence_number, bool) or not isinstance(self.sequence_number, int):
             raise ContractError("sequence_number must be an integer")
         if self.sequence_number < 0:

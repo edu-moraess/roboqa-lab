@@ -4,10 +4,11 @@ from __future__ import annotations
 from datetime import datetime
 import hashlib
 import json
-import math
 from typing import Any, Mapping
 
-from roboqa.fault_injection.contracts import ContractError, thaw_json
+from dataclasses import dataclass
+
+from roboqa.fault_injection.contracts import ContractError, _non_empty, thaw_json
 
 
 def canonical_json(value: Any) -> str:
@@ -58,7 +59,29 @@ def build_configuration_hash(configuration: Mapping[str, Any]) -> str:
     return sha256_digest(configuration)
 
 
-def _unused_math_guard() -> None:
-    # Kept private intentionally; canonical_json's allow_nan=False is the
-    # authoritative finite-number guard.
-    return None
+@dataclass(frozen=True)
+class FaultProvenance:
+    """Immutable provenance record for one fault-injection execution."""
+
+    run_id: str
+    scenario_id: str
+    source_hash: str
+    output_hash: str
+    operator_version: str
+    configuration_hash: str
+    seed: int
+    created_at: str
+    parent_run_id: str | None = None
+
+    def __post_init__(self) -> None:
+        for name in ("run_id", "scenario_id", "operator_version"):
+            object.__setattr__(self, name, _non_empty(getattr(self, name), name))
+        for name in ("source_hash", "output_hash", "configuration_hash"):
+            object.__setattr__(self, name, validate_sha256(getattr(self, name), name))
+        if isinstance(self.seed, bool) or not isinstance(self.seed, int):
+            raise ContractError("seed must be an integer")
+        if not 0 <= self.seed <= (2**64 - 1):
+            raise ContractError("seed must be in [0, 2**64 - 1]")
+        object.__setattr__(self, "created_at", validate_utc_timestamp(self.created_at))
+        if self.parent_run_id is not None:
+            object.__setattr__(self, "parent_run_id", _non_empty(self.parent_run_id, "parent_run_id"))
