@@ -55,8 +55,9 @@ def test_first_gps_is_applied_exactly_once():
     assert result.status == FilterStatus.OK
     assert result.diagnostics.n_update == 1
     assert result.n == 2
-    assert result.x[-1, 0] > 0.0
-    assert result.x[-1, 1] < 0.0
+    np.testing.assert_allclose(
+        result.x[-1, :2], np.array([100.0, -50.0]) * (25.0 / 26.0)
+    )
 
 
 def test_future_t0_is_rejected_instead_of_dropping_earlier_data():
