@@ -124,8 +124,11 @@ class TemporalScheduler:
                 first = max(
                     0, math.floor((start - template.start_time - duration) / interval) + 1
                 )
-                limit = item.max_occurrences or self.MAX_GENERATED_OCCURRENCES + 1
-                candidate_indices = range(first, limit)
+                # Bound by the requested horizon, not by the absolute recurrence index.
+                last_exclusive = math.ceil((end - template.start_time) / interval)
+                if item.max_occurrences is not None:
+                    last_exclusive = min(last_exclusive, item.max_occurrences)
+                candidate_indices = range(first, max(first, last_exclusive))
 
             for index in candidate_indices:
                 if len(occurrences) >= self.MAX_GENERATED_OCCURRENCES:
