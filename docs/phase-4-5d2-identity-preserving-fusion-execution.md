@@ -33,13 +33,15 @@ Execute a validated `FusionSchedule` with the existing monotonic EKF runner and 
 
 ## Validation
 
-Status: **PENDING MANUAL COLAB VALIDATION**.
+Status: **FULL VALIDATION PASS — MANUAL COLAB**.
 
-Required checks:
-- targeted D2 tests;
-- full pytest suite;
-- Ruff over `roboqa` and `tests`;
-- compileall over `roboqa` and `tests`.
+Validation evidence:
+- Targeted D2 + D1 scheduling + adapter tests: **32 passed**.
+- Full `python -m pytest -q`: exit code **0**, reached 100%; the captured output did not expose an unambiguous aggregate test count, so none is inferred.
+- Full `ruff check roboqa tests`: **All checks passed!**
+- Full `python -m compileall -q roboqa tests`: exit code **0**.
+- The initial Ruff run found only import ordering in `roboqa/integration/__init__.py`; corrected in commit `43de077cf01b16c3114d5f7dfeeeaf53a6d2057d`. Targeted Ruff and compileall then passed, followed by the full validation above.
+- Validated branch HEAD: `43de077cf01b16c3114d5f7dfeeeaf53a6d2057d`.
 
 ## Next step
 
