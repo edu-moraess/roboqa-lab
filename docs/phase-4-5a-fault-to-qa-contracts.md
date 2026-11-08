@@ -1,6 +1,6 @@
 # Phase 4.5-A — Fault-to-QA Integration Contracts
 
-**Status:** implementation checkpoint created; manual Colab validation pending.
+**Status:** VALIDATION PASS — manual Google Colab.
 
 ## Objective
 
@@ -45,4 +45,14 @@ ruff check roboqa tests
 python -m compileall -q roboqa tests
 ```
 
-No validation result is claimed until these commands are executed and their output is reviewed.
+## Manual validation evidence
+
+Validated on the Phase 4.5-A branch after the final test and Ruff fixes:
+
+- `python -m pytest -q tests/unit/test_fault_to_qa_contracts.py`: **52 passed**.
+- `python -m pytest -q`: completed at 100% with exit code 0; no aggregate test count is inferred from the captured output.
+- `ruff check roboqa tests`: **All checks passed!**
+- `python -m compileall -q roboqa tests`: completed without errors.
+- Targeted compileall for `roboqa/integration` and its unit tests also completed without errors.
+
+Result: **VALIDATION PASS** for the Phase 4.5-A contracts and repository compatibility. This does not validate transport replay, scheduling, adapter semantics, or end-to-end fault-to-fusion execution.
