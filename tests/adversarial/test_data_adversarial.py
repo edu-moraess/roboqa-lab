@@ -200,6 +200,13 @@ def test_array_isolation():
     pos_ext[0, 0] = -999.0
     assert gt.t[0] == 0.0
     assert gt.pos[0, 0] == 0.0
+
+    assert not gt.t.flags.writeable
+    assert not gt.pos.flags.writeable
+    with pytest.raises((ValueError, RuntimeError)):
+        gt.pos[0, 0] = 42.0  # type: ignore[index]
+
     gt2 = gt.copy()
-    gt.pos[0, 0] = 42.0
+    assert gt2.pos is not gt.pos
+    assert not gt2.pos.flags.writeable
     assert gt2.pos[0, 0] == 0.0

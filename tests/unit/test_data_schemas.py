@@ -120,8 +120,10 @@ def test_groundtruth_copy():
     gt2 = gt.copy()
     assert gt2.source == gt.source
     np.testing.assert_array_equal(gt2.pos, gt.pos)
-    gt2.pos[0, 0] = 999.0
-    assert gt.pos[0, 0] != 999.0
+    assert gt2.pos is not gt.pos
+    assert gt2.t is not gt.t
+    assert not gt.pos.flags.writeable
+    assert not gt2.pos.flags.writeable
 
 
 def test_measurement_valid():
@@ -355,3 +357,43 @@ def test_schemas_invalid_source_type():
 def test_synthetic_seed_type_error():
     with pytest.raises(SchemaError):
         make_synthetic_ground_truth(seed="not_an_int")  # type: ignore
+
+
+def test_groundtruth_arrays_readonly():
+    gt = make_synthetic_ground_truth(n=20, seed=11)
+    for name in ("t", "pos", "yaw", "speed", "yaw_rate"):
+        arr = getattr(gt, name)
+        assert not arr.flags.writeable, f"{name} deveria ser write=False"
+        with pytest.raises((ValueError, RuntimeError)):
+            if arr.ndim == 1:
+                arr[0] = 999.0
+            else:
+                arr[0, 0] = 999.0
+
+
+def test_measurement_arrays_readonly():
+    m = Measurement(
+        t=0.0,
+        sensor="gps",
+        z=np.array([1.0, 2.0]),
+        R=np.eye(2),
+    )
+    assert not m.z.flags.writeable
+    assert not m.R.flags.writeable
+    with pytest.raises((ValueError, RuntimeError)):
+        m.z[0] = 999.0
+    with pytest.raises((ValueError, RuntimeError)):
+        m.R[0, 0] = 999.0
+
+
+def test_copy_produces_independent_readonly_arrays():
+    gt = make_synthetic_ground_truth(n=15, seed=3)
+    gt2 = gt.copy()
+    assert gt2.t is not gt.t
+    assert gt2.pos is not gt.pos
+    assert not gt.t.flags.writeable
+    assert not gt2.t.flags.writeable
+    assert not gt.pos.flags.writeable
+    assert not gt2.pos.flags.writeable
+    with pytest.raises((ValueError, RuntimeError)):
+        gt2.pos[0, 0] = 123.0
