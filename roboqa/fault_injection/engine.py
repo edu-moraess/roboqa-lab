@@ -1,7 +1,6 @@
 """Deterministic orchestration for fault injection over raw envelopes (Phase 3.2)."""
 from __future__ import annotations
 
-import hashlib
 import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -19,7 +18,7 @@ from roboqa.fault_injection.operators import (
     OutlierOperator, PacketLossOperator,
 )
 from roboqa.fault_injection.provenance import (
-    FaultProvenance, build_configuration_hash, canonical_json, sha256_digest,
+    FaultProvenance, build_configuration_hash, sha256_digest,
 )
 
 
