@@ -1,4 +1,4 @@
-"""Deterministic orchestration for fault injection over raw envelopes (Phase 3.2)."""
+"""Deterministic orchestration for fault injection over raw envelopes (Phases 3.2–3.3-C)."""
 from __future__ import annotations
 
 import math
@@ -127,7 +127,7 @@ class FaultInjectionEngine:
         operator = self._operators.get(scenario.fault_type)
         if operator is None:
             raise ContractError(
-                f"unsupported fault type for Phase 3.2: {scenario.fault_type.value}"
+                f"unsupported fault type for current engine: {scenario.fault_type.value}"
             )
         operator.validate_parameters(scenario.parameters)
         rng = np.random.default_rng(scenario.seed)
