@@ -6,7 +6,7 @@
 
 RoboQA Lab não é apenas uma demonstração de EKF. O objetivo é construir uma plataforma de engenharia para testar, observar e avaliar pipelines de percepção/estimação sensorial sob dados normais, falhas controladas e condições temporais adversas.
 
-> **Status do projeto:** implementação em andamento — Fases 1, 2.2, 3.1–3.3-E, 4.0, 4.1 e 4.2 validadas manualmente; Fase 4.3 também passou por pytest completo, Ruff e compileall no Colab. Fase 4.4-A está VALIDADA manualmente no Colab (30 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-A também passou pela validação manual dos contratos de integração (52 testes direcionados, suíte completa, Ruff e compileall). O produto completo ainda não está concluído.
+> **Status do projeto:** implementação em andamento — Fases 1, 2.2, 3.1–3.3-E, 4.0, 4.1 e 4.2 validadas manualmente; Fase 4.3 também passou por pytest completo, Ruff e compileall no Colab. Fase 4.4-A está VALIDADA manualmente no Colab (30 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-A passou pela validação manual dos contratos de integração (52 testes direcionados, suíte completa, Ruff e compileall). Fase 4.5-B tem replay temporal determinístico implementado, aguardando validação manual no Colab. O produto completo ainda não está concluído.
 
 ## Visão da plataforma
 
@@ -43,7 +43,7 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 | 4.3 | Deterministic Quality Gate | **VALIDATED — PYTEST, RUFF, COMPILEALL** |
 | 4.4-A | ML Feature/Dataset Contracts | **VALIDATED — TARGETED + FULL SUITE, RUFF, COMPILEALL** |
 | 4.5-A | Fault-to-QA Integration Contracts | **VALIDATED — 52 TARGETED TESTS, FULL SUITE, RUFF, COMPILEALL** |
-| 4.5-B onward | Transport replay, ordering, adapter and end-to-end integration | PLANNED |
+| 4.5-B | Deterministic transport replay, watermark, deduplication and packet accounting | IMPLEMENTED — VALIDATION PENDING |\n| 4.5-C/D onward | Measurement adapter, Fusion scheduling and end-to-end integration | PLANNED |
 | 4.6 | Streamlit Control Center | PLANNED |
 
 ### Relatório consolidado
