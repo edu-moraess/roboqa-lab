@@ -1,6 +1,6 @@
 # Phase 4.5-B — Deterministic Transport Replay
 
-**Implementation status:** implemented; **manual Colab validation pending**.
+**Implementation status:** implemented; **manual Colab validation PASS**.
 
 ## Objective
 
@@ -90,6 +90,21 @@ Duplicates are additional delivery copies, not additional unique source packets.
 - No ML training/inference, dataset downloads, Streamlit, CI/GitHub Actions, or merge.
 
 The next integration phase must define a separate adapter/scheduling boundary and test its effect on Fusion telemetry and QA. The strict normalized `Measurement` contract remains unchanged.
+
+## Validation evidence — 2026-11-08
+
+Manual Google Colab validation completed on branch `feat/temporal-replay-phase-4-5b`, code HEAD before recording the validation: `9e239725775657ca0ac5bb65e3d6dd4e72fd2d5f`.
+
+- Targeted replay suite: **19 passed** after correcting three test fixtures to preserve causal clock ordering while still exercising event-time disorder.
+- Targeted Ruff: PASS.
+- Targeted compileall: PASS.
+- Full `pytest -q`: exit code 0, no failures reported. The captured output did not expose an aggregate test count; no total is inferred.
+- Full `ruff check roboqa tests`: PASS.
+- Full `compileall -q roboqa tests`: PASS.
+
+The initial targeted run exposed three failing fixtures whose arrival timestamps preceded their acquisition timestamps. The production temporal validation was retained. The fixtures were corrected to acquisition/arrival pairs (1.0, 1.1), (2.0, 2.2), and (1.5, 2.3), preserving out-of-order event time without violating acquisition-before-arrival causality. The 19-test targeted suite then passed.
+
+Result: **PHASE 4.5-B VALIDATION PASS** for the deterministic offline replay boundary and repository compatibility. This does not validate a Measurement adapter, arrival-order Fusion scheduling, or end-to-end Fusion/QA integration.
 
 ## Manual Colab validation
 
