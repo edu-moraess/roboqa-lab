@@ -89,3 +89,19 @@ python -m compileall -q roboqa tests
 ```
 
 Do not mark Phase 4.4-A validated until the actual outputs are reviewed.
+
+
+## Validation evidence — 2026-11-08
+
+Phase 4.4-A was manually validated in Google Colab on branch `feat/ml-intelligence-contracts-phase-4-4a`, HEAD `fa03643f18683b6317c4806e4d04709733ebb3d7`:
+
+- `python -m pytest -q tests/unit/test_ml_contracts.py`: **30 passed**.
+- Targeted Ruff: `All checks passed!`.
+- Targeted compileall: completed without errors.
+- Full `python -m pytest -q`: reached 100%, with no reported failures.
+- Full `ruff check roboqa tests --output-format=full`: `All checks passed!`.
+- Full `python -m compileall -q roboqa tests`: completed without errors.
+
+The full-suite output did not expose an unambiguous aggregate test count. This is a contract and compatibility validation, not evidence of trained-model performance. No training, inference, or dataset download was performed.
+
+**Status: VALIDATION PASS.** PR #13 remains Draft and unmerged.
