@@ -1,6 +1,6 @@
 # Phase 4.5-C — Strict Measurement Adapter
 
-**Implementation status:** implemented; **manual Colab validation pending**.
+**Status:** implemented and **manual Colab validation PASS** (2026-11-08).
 
 ## Objective
 
@@ -42,3 +42,14 @@ The adapter preserves all three clocks, but only acquisition time maps to `Measu
 - No model training/inference, Streamlit, CI/GitHub Actions, or merge.
 
 Manual Colab validation is required: targeted adapter tests, full pytest, Ruff, and compileall. Keep the PR Draft until the actual outputs are reviewed.
+
+
+## Manual validation evidence — 2026-11-08
+
+Validated on branch `feat/measurement-adapter-phase-4-5c`, code checkpoint `77f0e6e267f08f86ddc7f1468da0b9d474d348ef`, with two validation-only corrections:
+- Adapter unit tests: **10 passed**.
+- Full `python -m pytest -q`: exit code **0**, no failures. The captured output did not expose an aggregate test count; none is inferred.
+- `ruff check roboqa tests`: **All checks passed**.
+- `python -m compileall -q roboqa tests`: exit code **0**.
+
+The only changes needed were the case-insensitive dimension-error assertion and import ordering in `roboqa/integration/__init__.py`; production adapter behavior was unchanged. The validation covers adapter contracts and repository compatibility, not arrival-order Fusion execution or end-to-end Fusion/QA integration.
