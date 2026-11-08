@@ -54,6 +54,19 @@ def test_engine_packet_loss_probability_zero_preserves_packets_and_marks_no_effe
     assert all(not event.affected for event in execution.result.events)
 
 
+def test_engine_packet_loss_is_reproducible_for_same_seed_and_input_order():
+    scenario = _scenario(FaultType.PACKET_LOSS, {"loss_probability": 0.4}, seed=2026)
+    engine = FaultInjectionEngine()
+    first = engine.run(_envelopes(), scenario)
+    second = engine.run(_envelopes(), scenario)
+    assert first.output_envelopes == second.output_envelopes
+    assert first.provenance.source_hash == second.provenance.source_hash
+    assert first.provenance.output_hash == second.provenance.output_hash
+    assert [event.affected for event in first.result.events] == [
+        event.affected for event in second.result.events
+    ]
+
+
 def test_engine_packet_loss_probability_one_drops_only_target_sensor_packets():
     scenario = _scenario(FaultType.PACKET_LOSS, {"loss_probability": 1.0})
     execution = FaultInjectionEngine().run(_envelopes(), scenario)
