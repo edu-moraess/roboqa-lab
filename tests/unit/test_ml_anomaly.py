@@ -136,11 +136,14 @@ def test_model_does_not_consume_reference_labels():
 
 
 def test_scoring_rejects_feature_unit_mismatch_without_conversion():
-    data = dataset(validation_unit="km")
+    data = dataset()
     model = fit_statistical_baseline(data)
-    prediction = {
-        item.sample_id: item for item in score_statistical_baseline(model, data)
-    }["validation-outlier"]
+    mismatched = FeatureDataset(
+        "different-units", "1.0", data.created_at,
+        (row("external", DatasetSplit.TEST, 100.0, unit="km"),),
+        HASH_A, HASH_B,
+    )
+    prediction = score_statistical_baseline(model, mismatched)[0]
     assert prediction.decision is AnomalyDecision.UNSCORABLE
     assert prediction.score is None
     assert "unit mismatch" in prediction.reason
