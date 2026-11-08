@@ -36,6 +36,15 @@ unchanged and counted as skipped because they cannot be safely selected or
 represented in normalized `FaultEvent` timestamps. Non-finite payload values
 are preserved and can be hashed using an explicit tagged representation.
 
+## Campaign orchestration
+
+`FaultInjectionEngine.run_campaign(envelopes, scenarios)` applies a non-empty
+sequence of unique scenarios in the exact order supplied by the caller. Each
+scenario consumes the previous scenario's output. The returned
+`FaultCampaignExecution` retains the original input and every intermediate
+`FaultExecution`. Provenance records are linked through `parent_run_id`.
+Campaign order is explicit and is never inferred or silently reordered.
+
 ## Determinism, atomicity, and provenance
 
 Each run creates a local NumPy generator from `scenario.seed`; no global RNG is
