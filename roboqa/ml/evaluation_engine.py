@@ -114,7 +114,7 @@ def evaluate_anomaly_predictions(
     """
     if not isinstance(dataset, FeatureDataset):
         raise AnomalyEvaluationError("dataset must be a FeatureDataset")
-    if evaluation_split not in (DatasetSplit.VALIDATION, DatasetSplit.TEST):
+    if not isinstance(evaluation_split, DatasetSplit) or evaluation_split not in (\n        DatasetSplit.VALIDATION, DatasetSplit.TEST\n    ):
         raise AnomalyEvaluationError(
             "evaluation_split must be VALIDATION or TEST; TRAIN is prohibited"
         )
