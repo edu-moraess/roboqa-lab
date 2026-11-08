@@ -31,6 +31,14 @@ class FaultExecution:
     provenance: FaultProvenance
 
 
+@dataclass(frozen=True)
+class FaultCampaignExecution:
+    """Ordered composition of scenarios with an explicit provenance chain."""
+    input_envelopes: tuple[RawMeasurementEnvelope, ...]
+    output_envelopes: tuple[RawMeasurementEnvelope, ...]
+    executions: tuple[FaultExecution, ...]
+
+
 def _portable(value):
     """Represent non-finite raw values explicitly so their hashes remain stable."""
     if isinstance(value, float):
@@ -93,6 +101,8 @@ class FaultInjectionEngine:
         self,
         envelopes: Sequence[RawMeasurementEnvelope],
         scenario: FaultScenario,
+        *,
+        parent_run_id: str | None = None,
     ) -> FaultExecution:
         if not isinstance(scenario, FaultScenario):
             raise ContractError("scenario must be a FaultScenario")
@@ -191,10 +201,46 @@ class FaultInjectionEngine:
             configuration_hash=configuration_hash,
             seed=scenario.seed,
             created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            parent_run_id=parent_run_id,
         )
         return FaultExecution(
             input_envelopes=original,
             output_envelopes=output_envelopes,
             result=result,
             provenance=provenance,
+        )
+
+    def run_campaign(
+        self,
+        envelopes: Sequence[RawMeasurementEnvelope],
+        scenarios: Sequence[FaultScenario],
+    ) -> FaultCampaignExecution:
+        """Apply scenarios sequentially in caller-declared order.
+
+        Each scenario receives the previous scenario's output. The original
+        input snapshot is retained, and provenance records form a parent chain.
+        """
+        original = tuple(envelopes)
+        selected = tuple(scenarios)
+        if not selected:
+            raise ContractError("a campaign requires at least one scenario")
+        if any(not isinstance(item, FaultScenario) for item in selected):
+            raise ContractError("all campaign items must be FaultScenario instances")
+        scenario_ids = [item.scenario_id for item in selected]
+        if len(set(scenario_ids)) != len(scenario_ids):
+            raise ContractError("campaign scenario_id values must be unique")
+
+        current = original
+        executions: list[FaultExecution] = []
+        parent_run_id = None
+        for scenario in selected:
+            execution = self.run(current, scenario, parent_run_id=parent_run_id)
+            executions.append(execution)
+            current = execution.output_envelopes
+            parent_run_id = execution.provenance.run_id
+
+        return FaultCampaignExecution(
+            input_envelopes=original,
+            output_envelopes=current,
+            executions=tuple(executions),
         )
