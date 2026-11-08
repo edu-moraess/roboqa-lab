@@ -35,7 +35,6 @@ from roboqa.fault_injection.provenance import (
     validate_sha256,
     validate_utc_timestamp,
 )
-
 from roboqa.fault_injection.scheduler import (
     FaultSchedule,
     ScheduledFaultOccurrence,
