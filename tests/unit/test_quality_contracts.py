@@ -1,4 +1,5 @@
 import pytest
+
 from roboqa.qa import (
     FindingSeverity,
     MetricAvailability,
@@ -9,7 +10,6 @@ from roboqa.qa import (
     QualityFinding,
     QualityReport,
 )
-
 
 HASH_A = "a" * 64
 HASH_B = "b" * 64
