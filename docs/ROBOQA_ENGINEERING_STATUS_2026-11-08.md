@@ -693,14 +693,14 @@ python -m pytest -q
 
 ## 27. Engineering checkpoint — Phase 4.4-D0 anomaly evaluation contracts (2026-11-08)
 
-### Scope implemented; manual validation pending
+### Scope implemented; FULL VALIDATION PASS
 
 - Branch: `feat/ml-evaluation-contracts-phase-4-4d0`.
 - Base: Phase 4.4-C validated documentation checkpoint `4db65b412c63bd42a19f723187c5249b527d47e0`.
 - Adds `roboqa/ml/evaluation.py` with immutable evaluation evidence contracts.
 - Adds `tests/unit/test_ml_evaluation.py`, public exports in `roboqa/ml/__init__.py`, and specification `docs/phase-4-4d0-anomaly-evaluation-contracts.md`.
 - Adds README roadmap/status entry. No model or Quality Gate behavior is changed.
-- Validation status: **PENDING MANUAL COLAB**. No pytest, Ruff, compileall, coverage, or runtime PASS is claimed for this branch.
+- Validation status at initial implementation was pending; final manual Colab evidence is recorded in Section 28 below.
 
 ### Contract behavior
 
@@ -717,3 +717,32 @@ python -m pytest -q
 - Reference labels remain evaluation-only and are not added to model inputs.
 - No Quality Gate integration, policy changes, model fitting changes, dataset downloads, Streamlit, CI/GitHub Actions, merge, or changes to `main`.
 - Next: D1 evaluation engine with exact sample identity matching and deterministic overall/run/scenario metrics; D2 robustness comparisons on fixed scenarios; D3 calibration protocol restricted to TRAIN/VALIDATION with TEST held back for final evaluation.
+
+
+---
+
+## 28. Engineering addendum — Phase 4.4-D0 anomaly evaluation validation (2026-11-08)
+
+### Phase 4.4-D0 — FULL VALIDATION PASS
+
+- Branch: `feat/ml-evaluation-contracts-phase-4-4d0`.
+- Validated HEAD: `60e866c7120578fa6a0aafe97126ce3971a9545e`.
+- Base: Phase 4.4-C validated documentation checkpoint `4db65b412c63bd42a19f723187c5249b527d47e0`.
+- PR #22: https://github.com/edu-moraess/roboqa-lab/pull/22 — remains Draft, open, and unmerged; base is `feat/ml-anomaly-baselines-phase-4-4c`, not `main`.
+- Synchronization: Colab fetched the branch, fast-forwarded from `46258c89cc44af9c0b237f6bd2eb2df505c880e5`, and confirmed local and remote HEAD at the exact validated commit.
+- Targeted `tests/unit/test_ml_evaluation.py`: **33 passed**.
+- Full `ruff check roboqa tests`: **PASS** (`All checks passed!`).
+- Full `python -m compileall -q roboqa tests`: exit code **0**.
+- Full `python -m pytest -q`: reached 100%, exit code **0**, no failures reported. The captured output did not expose an unambiguous aggregate test count; no total is inferred.
+- The initial targeted run exposed one mismatch between the empty-hash validation message and the test's SHA-256 expectation. `_sha256` was corrected in commit `60e866c7120578fa6a0aafe97126ce3971a9545e`; all checks above were rerun on that exact HEAD.
+- Result: **FULL VALIDATION PASS**, based on manual Google Colab output. No GitHub Actions validation is claimed.
+
+### Contract behavior retained
+
+- Evaluation reports are restricted to VALIDATION and TEST; TRAIN is rejected.
+- UNKNOWN reference labels remain outside binary confusion counts; UNSCORABLE predictions remain separately accounted for.
+- Undefined classification ratios remain `None`, not zero.
+- Overall, per-run, and per-scenario slices are supported with unique identities and consistent count reconciliation.
+- Dataset and prediction SHA-256 provenance plus UTC generation timestamp are required.
+- No metric aggregation engine, detector fitting/scoring, threshold calibration, Quality Gate integration, policy change, model/data download, Streamlit, CI, or merge was introduced in D0.
+- The deterministic Quality Gate remains the sole quality decision authority.
