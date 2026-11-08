@@ -242,9 +242,18 @@ def test_warning_lower_bound_and_hard_lower_bound():
     assert failed.decision is QualityDecision.FAIL
 
 
-def test_hard_and_warning_boundaries_are_inclusive():
+def test_hard_maximum_boundary_is_inclusive():
     report = evaluate(
         [metric(value=1.0)],
+        [MetricRule("rmse", "position_rmse", MetricScope.RUN,
+                    minimum=0.0, maximum=1.0)],
+    )
+    assert report.decision is QualityDecision.PASS
+
+
+def test_warning_maximum_boundary_is_inclusive():
+    report = evaluate(
+        [metric(value=0.8)],
         [MetricRule("rmse", "position_rmse", MetricScope.RUN,
                     minimum=0.0, maximum=1.0, warning_maximum=0.8)],
     )
