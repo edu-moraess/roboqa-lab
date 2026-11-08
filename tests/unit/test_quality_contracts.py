@@ -1,5 +1,4 @@
 import pytest
-
 from roboqa.qa import (
     FindingSeverity,
     MetricAvailability,
