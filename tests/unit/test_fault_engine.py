@@ -63,9 +63,9 @@ def test_engine_is_deterministic_and_provenance_hashes_are_stable():
 
 
 def test_engine_hashes_nonfinite_raw_values_without_json_nan_extension():
-    inputs = (RawMeasurementEnvelope("gps", 1.0, 1.1, 0, {"z": [float("nan")]}),)
+    inputs = (RawMeasurementEnvelope("gps", 1.0, 1.1, 0, {"z": [float("nan"), 2.0]}),)
     execution = FaultInjectionEngine().run(
-        inputs, _scenario(FaultType.BIAS, {"offset": (1.0,)})
+        inputs, _scenario(FaultType.BIAS, {"offset": (1.0, 1.0)})
     )
     assert len(execution.output_envelopes) == 1
     assert execution.provenance.source_hash != execution.provenance.output_hash
