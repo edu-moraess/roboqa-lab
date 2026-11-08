@@ -116,6 +116,17 @@ def test_stochastic_delay_is_nonnegative_and_seed_reproducible(distribution, par
     assert first.acquisition_time == source.acquisition_time
 
 
+@pytest.mark.parametrize("operator,scenario", [
+    (DelayOperator(), _scenario(FaultType.DELAY, {"delay_s": 1e308})),
+    (ArrivalShiftOperator(), _scenario(FaultType.OUT_OF_ORDER, {"shift_s": 1e308})),
+    (DuplicateOperator(), _scenario(FaultType.DUPLICATE, {"duplicate_delay_s": 1e308})),
+])
+def test_transport_operators_reject_non_finite_arrival_overflow(operator, scenario):
+    source = _envelope(arrival=1e308)
+    with pytest.raises(ContractError, match="non-finite arrival_time"):
+        operator.apply(source, scenario, np.random.default_rng(1))
+
+
 def test_arrival_shift_can_create_earlier_transport_arrival():
     source = _envelope()
     output = ArrivalShiftOperator().apply(source, _scenario(FaultType.OUT_OF_ORDER, {"shift_s": -2.0}), np.random.default_rng(1))[0]
