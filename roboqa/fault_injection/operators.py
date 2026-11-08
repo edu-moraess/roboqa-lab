@@ -18,6 +18,7 @@ class EnvelopeFaultOperator(Protocol):
     fault_type: FaultType
 
     def validate_parameters(self, parameters: Mapping[str, object]) -> None: ...
+    def is_applicable(self, envelope: RawMeasurementEnvelope, scenario: FaultScenario) -> bool: ...
     def apply(
         self,
         envelope: RawMeasurementEnvelope,
@@ -65,6 +66,10 @@ class _BaseOperator:
     def validate_parameters(self, parameters: Mapping[str, object]) -> None:
         if not isinstance(parameters, Mapping):
             raise ContractError("operator parameters must be a mapping")
+
+    def is_applicable(self, envelope, scenario):
+        del envelope, scenario
+        return True
 
     def describe(self) -> Mapping[str, object]:
         return {"operator_id": self.operator_id, "version": self.version,
@@ -121,6 +126,18 @@ class ArrivalShiftOperator(_BaseOperator):
         if "shift_s" not in parameters:
             raise ContractError("shift_s is required")
         _finite_number(parameters["shift_s"], "shift_s")
+        if "sequence_numbers" in parameters:
+            selected = parameters["sequence_numbers"]
+            if not isinstance(selected, (tuple, list)) or not selected:
+                raise ContractError("sequence_numbers must be a non-empty integer list")
+            if any(isinstance(item, bool) or not isinstance(item, int) or item < 0 for item in selected):
+                raise ContractError("sequence_numbers must contain non-negative integers")
+            if len(set(selected)) != len(selected):
+                raise ContractError("sequence_numbers must be unique")
+
+    def is_applicable(self, envelope, scenario):
+        selected = scenario.parameters.get("sequence_numbers")
+        return selected is None or envelope.sequence_number in selected
 
     def apply(self, envelope, scenario, rng):
         del rng
