@@ -7,6 +7,14 @@ from roboqa.integration.contracts import (
     TransportOrderingPolicy,
     TransportReplaySummary,
 )
+from roboqa.integration.execution import (
+    ExecutionDisposition,
+    FusionExecutionError,
+    FusionExecutionRecord,
+    FusionExecutionResult,
+    MeasurementExecutionOutcome,
+    execute_fusion_schedule,
+)
 from roboqa.integration.measurement_adapter import (
     AdaptedMeasurement,
     MeasurementAdapterError,
@@ -36,4 +44,10 @@ __all__ = [
     "FusionSchedulingError",
     "FusionSchedulingPolicy",
     "build_fusion_schedule",
+    "ExecutionDisposition",
+    "FusionExecutionError",
+    "FusionExecutionRecord",
+    "FusionExecutionResult",
+    "MeasurementExecutionOutcome",
+    "execute_fusion_schedule",
 ]
