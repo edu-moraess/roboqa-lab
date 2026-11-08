@@ -244,3 +244,25 @@ def test_rejects_filter_result_telemetry_not_bound_to_execution_record():
             replay_summary=replay.summary,
             execution_record=execution.record,
         )
+
+
+def test_rejects_filter_status_not_bound_to_execution_record():
+    from roboqa.fusion.result import FilterStatus
+
+    _, _, replay, _, execution = make_pipeline()
+    altered = type(execution.filter_result)(
+        t=execution.filter_result.t.copy(),
+        x=execution.filter_result.x.copy(),
+        P=execution.filter_result.P.copy(),
+        status=FilterStatus.WARNING,
+        diagnostics=execution.filter_result.diagnostics,
+        provenance=execution.filter_result.provenance.copy(),
+        config=execution.filter_result.config.copy(),
+        telemetry=execution.filter_result.telemetry,
+    )
+    with pytest.raises(IntegratedQualityError, match="status"):
+        compute_integrated_quality_metrics(
+            altered,
+            replay_summary=replay.summary,
+            execution_record=execution.record,
+        )
