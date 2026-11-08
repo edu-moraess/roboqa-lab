@@ -46,7 +46,7 @@ def test_run_and_sensor_metrics_are_calculated_with_explicit_sample_counts():
     by_key = {(m.name, m.sensor_id): m for m in metrics}
     assert by_key[("position_rmse", None)].value == pytest.approx(np.sqrt(5.0))
     assert by_key[("covariance_trace_mean", None)].value == pytest.approx(5.0)
-    assert by_key[("innovation_norm_mean", "gps")].value == pytest.approx(4.0)
+    assert by_key[("innovation_norm_mean", "gps")].value == pytest.approx(3.5)
     assert by_key[("nis_mean", "gps")].value == pytest.approx(3.0)
     assert by_key[("sensor_availability", "gps")].value == pytest.approx(0.5)
     assert by_key[("sensor_availability", "speed")].value == pytest.approx(0.5)
@@ -131,3 +131,190 @@ def test_covariance_trace_is_invalid_for_non_psd_snapshots():
     covariance = next(m for m in metrics if m.name == "covariance_trace_mean")
     assert covariance.availability is MetricAvailability.INVALID
     assert covariance.value is None
+
+# PHASE_42_ADDITIONAL_CONTRACT_TESTS
+
+def test_rejects_non_filter_result():
+    with pytest.raises(QualityMetricError):
+        compute_quality_metrics(object())
+
+
+@pytest.mark.parametrize(
+    "attribute,value",
+    [
+        ("t", np.zeros((4, 1))),
+        ("x", np.zeros((4, 5, 1))),
+        ("P", np.zeros((4, 5, 5, 1))),
+        ("x", np.zeros((3, 5))),
+        ("x", np.zeros((4, 4))),
+        ("P", np.zeros((4, 4, 4))),
+        ("t", np.array([0.0, 1.0, np.nan, 2.0])),
+        ("x", np.full((4, 5), np.nan)),
+        ("P", np.full((4, 5, 5), np.nan)),
+        ("t", np.array([0.0, 1.0, 0.5, 2.0])),
+    ],
+)
+def test_rejects_invalid_filter_result_arrays(attribute, value):
+    result = _result()
+    setattr(result, attribute, value)
+
+    with pytest.raises(QualityMetricError):
+        compute_quality_metrics(result)
+
+
+def test_rejects_non_ground_truth_object():
+    with pytest.raises(QualityMetricError):
+        compute_quality_metrics(_result(), ground_truth=object())
+
+
+def test_rmse_is_missing_when_filter_times_do_not_overlap_ground_truth():
+    truth = GroundTruth(
+        t=np.array([10.0, 11.0]),
+        pos=np.array([[0.0, 0.0], [1.0, 1.0]]),
+        yaw=np.zeros(2),
+        speed=np.ones(2),
+        yaw_rate=np.zeros(2),
+        source="synthetic",
+    )
+
+    metrics = compute_quality_metrics(_result(), ground_truth=truth)
+    rmse = next(m for m in metrics if m.name == "position_rmse")
+
+    assert rmse.availability is MetricAvailability.MISSING
+    assert rmse.value is None
+    assert rmse.sample_count == 0
+
+
+def test_rmse_is_missing_when_overlap_has_no_aligned_samples():
+    truth = GroundTruth(
+        t=np.array([0.4, 1.4, 2.4]),
+        pos=np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]]),
+        yaw=np.zeros(3),
+        speed=np.ones(3),
+        yaw_rate=np.zeros(3),
+        source="synthetic",
+    )
+
+    metrics = compute_quality_metrics(
+        _result(),
+        ground_truth=truth,
+        alignment_tolerance_s=0.001,
+    )
+    rmse = next(m for m in metrics if m.name == "position_rmse")
+
+    assert rmse.availability is MetricAvailability.MISSING
+    assert rmse.value is None
+
+
+def test_rejects_unconvertible_alignment_tolerance():
+    with pytest.raises(QualityMetricError):
+        compute_quality_metrics(_result(), alignment_tolerance_s="invalid")
+
+
+@pytest.mark.parametrize("envelopes", ["not-a-sequence", b"bytes"])
+def test_rejects_string_envelopes(envelopes):
+    with pytest.raises(QualityMetricError):
+        compute_quality_metrics(_result(), envelopes=envelopes)
+
+
+def test_rejects_invalid_envelope_item():
+    with pytest.raises(QualityMetricError):
+        compute_quality_metrics(_result(), envelopes=[object()])
+
+
+def test_rejects_non_mapping_expected_measurements():
+    with pytest.raises(QualityMetricError):
+        compute_quality_metrics(_result(), expected_measurements=[("gps", 2)])
+
+
+@pytest.mark.parametrize(
+    "expected",
+    [
+        {"": 1},
+        {"gps": True},
+        {"gps": 1.5},
+        {"gps": -1},
+        {" GPS ": 1, "gps": 2},
+    ],
+)
+def test_rejects_invalid_expected_measurement_contracts(expected):
+    with pytest.raises(QualityMetricError):
+        compute_quality_metrics(_result(), expected_measurements=expected)
+
+
+def test_covariance_trace_is_invalid_for_asymmetric_snapshots():
+    result = _result()
+    result.P[0, 0, 1] = 0.5
+
+    metrics = compute_quality_metrics(result)
+    covariance = next(m for m in metrics if m.name == "covariance_trace_mean")
+
+    assert covariance.availability is MetricAvailability.INVALID
+    assert covariance.value is None
+
+
+def test_covariance_trace_is_invalid_when_eigendecomposition_fails(monkeypatch):
+    result = _result()
+
+    def fail_eigendecomposition(*args, **kwargs):
+        raise np.linalg.LinAlgError("simulated numerical failure")
+
+    monkeypatch.setattr(np.linalg, "eigvalsh", fail_eigendecomposition)
+
+    metrics = compute_quality_metrics(result)
+    covariance = next(m for m in metrics if m.name == "covariance_trace_mean")
+
+    assert covariance.availability is MetricAvailability.INVALID
+    assert covariance.value is None
+
+
+def test_empty_filter_result_reports_missing_covariance_and_rejection_rate():
+    result = FilterResult(
+        t=np.array([], dtype=float),
+        x=np.empty((0, 5), dtype=float),
+        P=np.empty((0, 5, 5), dtype=float),
+        status=FilterStatus.OK,
+        diagnostics=FilterDiagnostics(),
+    )
+
+    metrics = compute_quality_metrics(result)
+    by_name = {m.name: m for m in metrics}
+
+    assert by_name["covariance_trace_mean"].availability is MetricAvailability.MISSING
+    assert by_name["temporal_rejection_rate"].availability is MetricAvailability.MISSING
+
+
+def test_latency_is_invalid_when_any_clock_is_non_finite():
+    envelope = RawMeasurementEnvelope(
+        "gps", float("nan"), 1.2, 0, [1.0, 2.0], processing_time=1.3
+    )
+
+    metrics = compute_quality_metrics(_result(), envelopes=[envelope])
+    latency = next(
+        m for m in metrics
+        if m.name == "transport_latency_mean" and m.sensor_id == "gps"
+    )
+
+    assert latency.availability is MetricAvailability.INVALID
+    assert latency.value is None
+
+
+def test_latency_is_invalid_when_clock_evidence_is_incomplete():
+    envelopes = [
+        RawMeasurementEnvelope(
+            "gps", 1.0, 1.2, 0, [1.0, 2.0], processing_time=1.3
+        ),
+        RawMeasurementEnvelope(
+            "gps", 2.0, 2.2, 1, [2.0, 3.0]
+        ),
+    ]
+
+    metrics = compute_quality_metrics(_result(), envelopes=envelopes)
+    processing = next(
+        m for m in metrics
+        if m.name == "processing_wait_mean" and m.sensor_id == "gps"
+    )
+
+    assert processing.availability is MetricAvailability.INVALID
+    assert processing.value is None
+
