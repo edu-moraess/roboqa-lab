@@ -12,7 +12,11 @@ from typing import Sequence
 import numpy as np
 
 from roboqa.fault_injection.envelopes import RawMeasurementEnvelope
-from roboqa.integration.contracts import EnvelopeIdentity, TransportReplaySummary
+from roboqa.integration.contracts import (
+    DeliveryDisposition,
+    EnvelopeIdentity,
+    TransportReplaySummary,
+)
 from roboqa.integration.measurement_adapter import AdaptedMeasurement
 from roboqa.integration.replay import TransportReplayResult
 
@@ -105,6 +109,15 @@ class FusionSchedule:
         keys = [_identity_key(item.identity) for item in entries]
         if len(set(keys)) != len(keys):
             raise FusionSchedulingError("schedule identities must be unique")
+        accepted_keys = {
+            _identity_key(decision.identity)
+            for decision in self.replay_summary.decisions
+            if decision.disposition is DeliveryDisposition.ACCEPTED
+        }
+        if set(keys) != accepted_keys:
+            raise FusionSchedulingError(
+                "schedule identities must match replay-accepted identities"
+            )
         entry_order = tuple(_entry_key(item) for item in entries)
         if entry_order != tuple(sorted(entry_order)):
             raise FusionSchedulingError("entries must be sorted by acquisition time and identity")
