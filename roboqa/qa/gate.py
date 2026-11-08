@@ -130,6 +130,11 @@ class QualityGatePolicy:
         object.__setattr__(self, "rules", rules)
 
 
+def _metric_identity(item: MetricObservation):
+    sensor_id = item.sensor_id.strip().lower() if item.sensor_id is not None else None
+    return (item.name, item.scope, sensor_id, item.window_start, item.window_end)
+
+
 def _expected_range(rule: MetricRule) -> str | None:
     parts = []
     if rule.minimum is not None:
@@ -194,9 +199,7 @@ def evaluate_quality_gate(
 
     by_identity = {}
     for item in observations:
-        identity = (
-            item.name, item.scope, item.sensor_id, item.window_start, item.window_end
-        )
+        identity = _metric_identity(item)
         if identity in by_identity:
             raise QualityGateError("duplicate metric observation identity")
         by_identity[identity] = item
