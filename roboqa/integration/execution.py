@@ -12,11 +12,7 @@ import numpy as np
 
 from roboqa.fusion.result import FilterResult, FilterStatus, InnovationTelemetry
 from roboqa.fusion.runner import run_filter
-from roboqa.integration.contracts import (
-    DeliveryDisposition,
-    EnvelopeIdentity,
-    TransportReplaySummary,
-)
+from roboqa.integration.contracts import EnvelopeIdentity, TransportReplaySummary
 from roboqa.integration.scheduler import FusionSchedule
 
 
@@ -195,6 +191,29 @@ class FusionExecutionRecord:
         identities = [item.identity.key for item in outcomes]
         if len(set(identities)) != len(identities):
             raise FusionExecutionError("execution outcome identities must be unique")
+        accepted_keys = {
+            item.identity.key
+            for item in self.replay_summary.decisions
+            if item.disposition.value == "accepted"
+        }
+        if set(identities) != accepted_keys:
+            raise FusionExecutionError(
+                "execution outcomes must match replay-accepted identities exactly"
+            )
+        dispositions = [item.disposition for item in outcomes]
+        if dispositions != sorted(
+            dispositions,
+            key=lambda item: {
+                ExecutionDisposition.UPDATED: 0,
+                ExecutionDisposition.FAILED: 1,
+                ExecutionDisposition.NOT_EXECUTED: 2,
+            }[item],
+        ):
+            raise FusionExecutionError(
+                "execution outcomes must preserve the runner's updated/failure/pending prefix"
+            )
+        if sum(item.disposition is ExecutionDisposition.FAILED for item in outcomes) > 1:
+            raise FusionExecutionError("a stopped runner can have at most one failed measurement")
         object.__setattr__(self, "outcomes", outcomes)
         object.__setattr__(self, "errors", tuple(str(item) for item in self.errors))
         object.__setattr__(self, "warnings", tuple(str(item) for item in self.warnings))
