@@ -165,7 +165,9 @@ class FaultInjectionEngine:
                 sensor_id=envelope.sensor_id,
                 acquisition_time=envelope.acquisition_time,
                 arrival_time=event_arrival,
-                processing_time=envelope.processing_time,
+                processing_time=(
+                    envelope.processing_time if envelope.processing_timestamp_finite else None
+                ),
                 sequence_number=envelope.sequence_number,
                 fault_type=scenario.fault_type,
                 severity=1.0,
