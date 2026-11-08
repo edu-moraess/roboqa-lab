@@ -191,9 +191,20 @@ def test_rejects_mixed_detector_methods():
 
 
 def test_rejects_empty_evaluation_split():
-    dataset = make_dataset()
+    original = make_dataset()
+    dataset = FeatureDataset(
+        original.dataset_id,
+        original.schema_version,
+        original.created_at,
+        tuple(
+            sample for sample in original.samples
+            if sample.split is not DatasetSplit.VALIDATION
+        ),
+        original.source_hash,
+        original.configuration_hash,
+    )
     with pytest.raises(AnomalyEvaluationError, match="no samples"):
         evaluate_anomaly_predictions(
             dataset, make_predictions(dataset),
             evaluation_split=DatasetSplit.VALIDATION, generated_at=GENERATED,
-        ) if not any(s.split is DatasetSplit.VALIDATION for s in dataset.samples) else None
+        )
