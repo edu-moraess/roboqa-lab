@@ -1,4 +1,4 @@
-"""Unit / integration tests — runner and async sensors."""
+"""Unit / integration tests — runner and asynchronous sensors."""
 
 import numpy as np
 import pytest
@@ -47,12 +47,40 @@ def test_no_gps_still_runs():
     assert result.diagnostics.n_update == 3
 
 
+def test_first_gps_is_applied_exactly_once():
+    measurement = Measurement(
+        t=0.0, sensor="gps", z=np.array([100.0, -50.0]), R=np.eye(2)
+    )
+    result = run_filter([measurement])
+    assert result.status == FilterStatus.OK
+    assert result.diagnostics.n_update == 1
+    assert result.n == 2
+    np.testing.assert_allclose(
+        result.x[-1, :2], np.array([100.0, -50.0]) * (25.0 / 26.0)
+    )
+
+
+def test_future_t0_is_rejected_instead_of_dropping_earlier_data():
+    measurement = Measurement(t=1.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
+    result = run_filter([measurement], t0=2.0)
+    assert result.status == FilterStatus.INVALID_INPUT
+    assert result.diagnostics.n_update == 0
+    assert result.diagnostics.errors
+
+
+def test_invalid_t0_is_rejected():
+    measurement = Measurement(t=1.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
+    result = run_filter([measurement], t0=np.nan)
+    assert result.status == FilterStatus.INVALID_INPUT
+
+
 def test_determinism():
     gt = make_synthetic_ground_truth(n=40, seed=7)
     ms = simulate_measurements(gt, seed=7)
     r1 = run_filter(ms, sigma_a=0.4, sigma_alpha=0.08)
     r2 = run_filter(ms, sigma_a=0.4, sigma_alpha=0.08)
     np.testing.assert_allclose(r1.x, r2.x, atol=1e-12)
+    np.testing.assert_allclose(r1.P, r2.P, atol=1e-12)
 
 
 def test_does_not_mutate_gt_or_measurements():
@@ -75,3 +103,79 @@ def test_invalid_sensor_in_sequence():
     ]
     result = run_filter(ms)
     assert result.status == FilterStatus.INVALID_INPUT
+
+
+@pytest.mark.parametrize("sigma_a,sigma_alpha", [(-1.0, 0.1), (0.5, -0.1), (np.nan, 0.1)])
+def test_invalid_runner_process_noise_parameters(sigma_a, sigma_alpha):
+    measurement = Measurement(t=0.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
+    result = run_filter([measurement], sigma_a=sigma_a, sigma_alpha=sigma_alpha)
+    assert result.status == FilterStatus.INVALID_INPUT
+
+def test_custom_initial_state_and_covariance_are_used():
+    measurement = Measurement(t=0.0, sensor="gps", z=np.array([2.0, 3.0]), R=np.eye(2))
+    x0 = np.array([1.0, -1.0, 0.2, 4.0, 0.1])
+    P0 = np.eye(5) * 2.0
+    result = run_filter([measurement], x0=x0, P0=P0)
+    assert result.status == FilterStatus.OK
+    np.testing.assert_allclose(result.x[0], x0, rtol=0.0, atol=1e-12)
+    np.testing.assert_array_equal(result.P[0], P0)
+
+
+def test_invalid_custom_initial_shapes_return_invalid_input():
+    measurement = Measurement(t=0.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
+    result_x = run_filter([measurement], x0=np.zeros(4))
+    result_p = run_filter([measurement], P0=np.eye(4))
+    assert result_x.status == FilterStatus.INVALID_INPUT
+    assert result_p.status == FilterStatus.INVALID_INPUT
+    assert result_x.diagnostics.errors
+    assert result_p.diagnostics.errors
+
+
+def test_runner_reports_numerical_failure(monkeypatch):
+    from roboqa.fusion.ekf import EKFNumericalError
+
+    def fail_update(self, measurement):
+        raise EKFNumericalError("injected numerical failure")
+
+    monkeypatch.setattr("roboqa.fusion.runner.EKF.update", fail_update)
+    measurement = Measurement(t=0.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
+    result = run_filter([measurement])
+    assert result.status == FilterStatus.NUMERICAL_FAILURE
+    assert result.diagnostics.n_update == 0
+    assert "injected numerical failure" in result.diagnostics.errors[0]
+
+
+def test_runner_reports_schema_failure_during_update(monkeypatch):
+    from roboqa.data.schemas import SchemaError
+
+    def fail_update(self, measurement):
+        raise SchemaError("injected schema failure")
+
+    monkeypatch.setattr("roboqa.fusion.runner.EKF.update", fail_update)
+    measurement = Measurement(t=0.0, sensor="gps", z=np.zeros(2), R=np.eye(2))
+    result = run_filter([measurement])
+    assert result.status == FilterStatus.INVALID_INPUT
+    assert result.diagnostics.n_update == 0
+    assert "injected schema failure" in result.diagnostics.errors[0]
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"gps_sigma": -1.0},
+        {"speed_sigma": np.nan},
+        {"yawrate_sigma": np.inf},
+    ],
+)
+def test_simulation_rejects_invalid_noise_parameters(kwargs):
+    gt = make_synthetic_ground_truth(n=3, dt=0.1, seed=1)
+    with pytest.raises(SchemaError):
+        simulate_measurements(gt, **kwargs)
+
+
+@pytest.mark.parametrize("gps_every", [0, -1, 1.5])
+def test_simulation_rejects_invalid_gps_interval(gps_every):
+    gt = make_synthetic_ground_truth(n=3, dt=0.1, seed=1)
+    with pytest.raises(SchemaError, match="gps_every"):
+        simulate_measurements(gt, gps_every=gps_every)
+
