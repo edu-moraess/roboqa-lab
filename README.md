@@ -6,7 +6,7 @@
 
 RoboQA Lab não é apenas uma demonstração de EKF. O objetivo é construir uma plataforma de engenharia para testar, observar e avaliar pipelines de percepção/estimação sensorial sob dados normais, falhas controladas e condições temporais adversas.
 
-> **Status do projeto:** implementação em andamento — base validada até a **Fase 4.0**. O produto completo ainda não está concluído.
+> **Status do projeto:** implementação em andamento — base validada até a **Fase 4.0**; implementação da **Fase 4.1 em validação manual**. O produto completo ainda não está concluído.
 
 ## Visão da plataforma
 
@@ -34,17 +34,11 @@ O fluxo acima representa a arquitetura-alvo. Nem todos os módulos estão implem
 
 | Fase | Entrega | Estado |
 |---|---|---|
-| 1 | Data Engine — contratos, dados sintéticos e ingestão | <strong>VALIDATED</strong> |
-| 2.2 | Fusion Engine — CTRV + EKF hardening | <strong>VALIDATED</strong> |
-| 3.1 | Fault Injection — contratos, envelopes e proveniência | <strong>VALIDATED</strong> |
-| 3.2 | Fault Injection Engine — operadores e campanhas determinísticas | <strong>VALIDATED</strong> |
-| 3.3-A | Contratos temporais de três relógios | <strong>VALIDATED</strong> |
-| 3.3-B | Temporal Scheduler | <strong>VALIDATED</strong> |
-| 3.3-C | Transport Fault Model | <strong>VALIDATED</strong> |
-| 3.3-D | Overlapping Campaigns | <strong>VALIDATED</strong> |
-| 3.3-E | Integração e validação adversarial do pipeline | <strong>VALIDATED</strong> |
-| 4.0 | Quality Contracts | <strong>VALIDATED</strong> |
-| 4.1 | Fusion Telemetry | NEXT |
+| 1 | Data Engine — contratos, dados sintéticos e ingestão | **VALIDATED** |
+| 2.2 | Fusion Engine — CTRV + EKF hardening | **VALIDATED** |
+| 3.1–3.3-E | Fault Injection, temporal pipeline, campanhas e integração | **VALIDATED** |
+| 4.0 | Quality Contracts | **VALIDATED** |
+| 4.1 | Fusion Telemetry | **IMPLEMENTED — COLAB VALIDATION PENDING** |
 | 4.2–4.3 | Quality Metrics Engine + Deterministic Quality Gate | PLANNED |
 | 4.4 | ML Intelligence | PLANNED |
 | 4.5 | Fault-to-QA Integration | PLANNED |
@@ -65,7 +59,7 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Fundamentos de dados sintéticos, ingestão e proveniência.
 - Testes unitários e adversariais.
 
-### Fusion Engine — Fase 2
+### Fusion Engine — Fases 2 e 4.1
 
 - Modelo de movimento CTRV: `[x, y, psi, v, omega]`.
 - Transição CTRV, Jacobiano analítico e normalização angular.
@@ -74,6 +68,9 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Ordenação determinística de eventos e validação temporal.
 - Modelo discreto de ruído de processo com zero-order hold e limites de aproximação documentados.
 - Atualizações atômicas e validação da covariância.
+- **Fusion Telemetry:** registros imutáveis por atualização com vetor de inovação, covariância S, NIS, sensor, timestamp e graus de liberdade.
+- NIS calculado por `numpy.linalg.solve`, sem inversa matricial explícita.
+- `FilterResult.telemetry` agrega evidências das atualizações bem-sucedidas.
 
 ### Fault Injection — Fases 3.1 a 3.3
 
@@ -96,21 +93,16 @@ O histórico técnico, as entregas por fase, as evidências de validação manua
 - Estados de decisão definidos: `PASS`, `PASS_WITH_WARNINGS`, `FAIL`, `BLOCKED`.
 - Validação de escopos, valores finitos, identidades únicas e proveniência.
 
-**Limite da Fase 4.0:** os contratos estão implementados; o cálculo de NIS/RMSE, o mecanismo de métricas e a avaliação de políticas ainda não foram implementados.
+**Limite:** a Phase 4.1 expõe telemetria; agregação de métricas, limiares estatísticos, Quality Gate e ML ainda não foram implementados.
 
-## Próxima etapa — Fase 4.1
+## Próximas etapas
 
-**Fusion Telemetry**
-
-Instrumentar as atualizações do EKF para registrar, de forma imutável e rastreável:
-
-- vetor de inovação/resíduo (y);
-- covariância da inovação (S);
-- NIS calculado por solução linear estável;
-- identificação do sensor e graus de liberdade;
-- timestamps e resultado da atualização.
-
-A implementação deverá preservar a compatibilidade dos resultados atuais do EKF e incluir testes unitários, de integração e adversariais. O Quality Gate e o treinamento de ML ficam fora do escopo desta etapa.
+1. **4.1 — Fusion Telemetry:** validar no Colab e fechar os contratos de evidência por atualização.
+2. **4.2 — Quality Metrics:** agregar NIS, inovação, RMSE (quando houver ground truth alinhado), disponibilidade e latências.
+3. **4.3 — Deterministic Quality Gate:** decisões auditáveis com bloqueio quando faltar evidência obrigatória.
+4. **4.4 — ML Intelligence:** detecção de anomalias consultiva, após validação dos dados e métricas.
+5. **4.5 — Fault-to-QA Integration:** avaliar os efeitos das falhas no pipeline completo.
+6. **4.6 — Streamlit Control Center:** interface operacional de experimentos, telemetria e relatórios.
 
 ## Validação e desenvolvimento
 
@@ -121,7 +113,7 @@ A implementação deverá preservar a compatibilidade dos resultados atuais do E
 - Sem GitHub Actions como autoridade de validação.
 - Sem treinamento, downloads automáticos de datasets/pesos ou builds pesados antes da auditoria e dos gates pertinentes.
 
-Os percentuais e resultados históricos de testes são reportados no [relatório consolidado](docs/ROBOQA_ENGINEERING_STATUS_2026-11-08.md). Eles são evidências manuais registradas durante o desenvolvimento, não resultados de uma execução contínua neste README.
+A implementação da Phase 4.1 está no branch de trabalho e aguarda evidência de execução manual no Colab. Não considerar a fase validada antes de compileall, Ruff, testes direcionados, suíte completa e cobertura serem executados e registrados.
 
 ## Governança e integridade
 
@@ -134,8 +126,6 @@ Os percentuais e resultados históricos de testes são reportados no [relatório
 - O Quality Gate determinístico será autoritativo; ML terá papel consultivo.
 
 ## Instalação e execução
-
-Instalação local com dependências de desenvolvimento:
 
 ```bash
 pip install -e ".[dev]"
@@ -156,6 +146,7 @@ result = run_filter(
     provenance={"gt_source": ground_truth.source, "seed": 42},
 )
 print(result.status, result.diagnostics.n_update)
+print("Telemetry records:", len(result.telemetry))
 ```
 
 ## Proveniência experimental
