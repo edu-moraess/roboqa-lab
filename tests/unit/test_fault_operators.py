@@ -10,6 +10,7 @@ from roboqa.fault_injection import (
 from roboqa.fault_injection.operators import (
     ArrivalShiftOperator,
     BiasOperator,
+    BurstLossOperator,
     DelayOperator,
     DropoutOperator,
     DuplicateOperator,
@@ -27,10 +28,68 @@ def _envelope(t=1.0, arrival=1.1, z=(1.0, 2.0)):
     return RawMeasurementEnvelope("gps", t, arrival, 4, {"z": z, "R": [[1.0, 0.0], [0.0, 1.0]]})
 
 
-def test_dropout_and_packet_loss_remove_only_targeted_envelope():
+def test_dropout_and_packet_loss_have_distinct_semantics():
     source = _envelope()
-    assert DropoutOperator().apply(source, _scenario(FaultType.SENSOR_DROPOUT), np.random.default_rng(1)) == ()
-    assert PacketLossOperator().apply(source, _scenario(FaultType.PACKET_LOSS), np.random.default_rng(1)) == ()
+    assert DropoutOperator().apply(
+        source, _scenario(FaultType.SENSOR_DROPOUT), np.random.default_rng(1)
+    ) == ()
+    packet_loss = PacketLossOperator()
+    packet_loss.validate_parameters({"loss_probability": 1.0})
+    assert packet_loss.apply(
+        source, _scenario(FaultType.PACKET_LOSS, {"loss_probability": 1.0}),
+        np.random.default_rng(1),
+    ) == ()
+    assert packet_loss.apply(
+        source, _scenario(FaultType.PACKET_LOSS, {"loss_probability": 0.0}),
+        np.random.default_rng(1),
+    ) == (source,)
+
+
+def test_packet_loss_is_seeded_and_probability_is_bounded():
+    source = _envelope()
+    scenario = _scenario(FaultType.PACKET_LOSS, {"loss_probability": 0.45}, seed=77)
+    operator = PacketLossOperator()
+    first = tuple(
+        bool(operator.apply(source, scenario, np.random.default_rng(seed)))
+        for seed in range(20)
+    )
+    second = tuple(
+        bool(operator.apply(source, scenario, np.random.default_rng(seed)))
+        for seed in range(20)
+    )
+    assert first == second
+    with pytest.raises(ContractError, match="\[0, 1\]"):
+        operator.validate_parameters({"loss_probability": 1.1})
+    with pytest.raises(ContractError):
+        operator.validate_parameters({"loss_probability": -0.1})
+
+
+def test_burst_loss_applies_only_inside_declared_half_open_intervals():
+    operator = BurstLossOperator()
+    scenario = _scenario(
+        FaultType.INTERMITTENT_OUTAGE,
+        {"burst_intervals_s": [[2.0, 4.0], [7.0, 8.0]]},
+    )
+    operator.validate_parameters(scenario.parameters)
+    assert operator.is_applicable(_envelope(t=2.0), scenario)
+    assert operator.is_applicable(_envelope(t=3.999), scenario)
+    assert not operator.is_applicable(_envelope(t=4.0), scenario)
+    assert not operator.is_applicable(_envelope(t=6.0), scenario)
+    assert operator.apply(
+        _envelope(t=2.5), scenario, np.random.default_rng(1)
+    ) == ()
+
+
+@pytest.mark.parametrize("intervals", [
+    [],
+    [[2.0, 2.0]],
+    [[3.0, 2.0]],
+    [[4.0, 5.0], [3.0, 4.0]],
+    [[1.0]],
+])
+def test_burst_loss_rejects_invalid_intervals(intervals):
+    with pytest.raises(ContractError):
+        BurstLossOperator().validate_parameters({"burst_intervals_s": intervals})
 
 
 def test_delay_preserves_acquisition_time_and_adds_transport_delay():
@@ -39,6 +98,22 @@ def test_delay_preserves_acquisition_time_and_adds_transport_delay():
     assert output.acquisition_time == source.acquisition_time
     assert output.arrival_time == pytest.approx(3.6)
     assert output.payload == source.payload
+
+
+@pytest.mark.parametrize("distribution,parameters", [
+    ("uniform", {"min_delay_s": 0.1, "max_delay_s": 0.9}),
+    ("exponential", {"mean_delay_s": 0.5}),
+])
+def test_stochastic_delay_is_nonnegative_and_seed_reproducible(distribution, parameters):
+    source = _envelope()
+    scenario = _scenario(FaultType.DELAY, {"distribution": distribution, **parameters}, seed=91)
+    operator = DelayOperator()
+    first = operator.apply(source, scenario, np.random.default_rng(scenario.seed))[0]
+    second = operator.apply(source, scenario, np.random.default_rng(scenario.seed))[0]
+    delay = first.arrival_time - source.arrival_time
+    assert delay >= 0.0
+    assert first.arrival_time == second.arrival_time
+    assert first.acquisition_time == source.acquisition_time
 
 
 def test_arrival_shift_can_create_earlier_transport_arrival():
@@ -80,6 +155,10 @@ def test_duplicate_preserves_identity_and_emits_two_packets():
 
 @pytest.mark.parametrize("operator,params", [
     (DelayOperator(), {"delay_s": -1}),
+    (DelayOperator(), {"distribution": "uniform", "min_delay_s": 2.0, "max_delay_s": 1.0}),
+    (DelayOperator(), {"distribution": "unknown", "delay_s": 1.0}),
+    (PacketLossOperator(), {"loss_probability": 1.01}),
+    (BurstLossOperator(), {"burst_intervals_s": [[2.0, 1.0]]}),
     (ArrivalShiftOperator(), {}),
     (BiasOperator(), {"offset": ()}),
     (OutlierOperator(), {"sigma": 0}),
