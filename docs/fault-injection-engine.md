@@ -44,8 +44,10 @@ supports `distribution="uniform"` with non-negative `min_delay_s` and
 `max_delay_s`, or `distribution="exponential"` with positive `mean_delay_s`.
 The RNG is local to the scenario. All sampled delays are non-negative; only
 arrival time changes. Arrival sorting in the engine can consequently expose
-reordering when packets receive different delays. The existing `OUT_OF_ORDER`
-arrival-shift operator remains available for explicit selected-packet shifts.
+reordering when packets receive different delays. Delay, arrival-shift, and
+duplicate operators reject arithmetic overflow that would produce a non-finite
+arrival timestamp. The existing `OUT_OF_ORDER` arrival-shift operator remains
+available for explicit selected-packet shifts.
 
 ## Temporal and ordering semantics
 
