@@ -97,9 +97,9 @@ timestamps_finite property retains its Phase 3.2 meaning and checks acquisition
 and arrival only. Such an envelope remains eligible for transport fault
 injection when its acquisition and arrival timestamps are finite. The raw
 processing timestamp participates in canonical envelope hashes, while the
-normalized FaultEvent omits a non-finite processing timestamp. This phase
-defines metadata and diagnostics only: it does not add a scheduler, buffering
-policy, processing simulator, or clock-domain conversion.
+normalized FaultEvent omits a non-finite processing timestamp. Phase 3.3-A
+defined the metadata and diagnostics; the Temporal Scheduler was introduced
+separately in Phase 3.3-B.
 
 ## Campaign orchestration
 
@@ -109,6 +109,35 @@ scenario consumes the previous scenario's output. The returned
 `FaultCampaignExecution` retains the original input and every intermediate
 `FaultExecution`. Provenance records are linked through `parent_run_id`.
 Campaign order is explicit and is never inferred or silently reordered.
+
+## Overlapping campaigns and logical concurrency (Phase 3.3-D)
+
+`FaultInjectionEngine.run_overlapping_campaign(envelopes, scenarios)` accepts
+at least two unique scenarios and requires at least one pair of scenario windows
+to overlap under half-open interval semantics. It sorts scenarios independently
+of caller input order using the stable key
+`(start_time, end_time, scenario_id)`. This removes accidental dependence on
+the order in which a caller supplied the scenario list.
+
+The current implementation models **logical concurrency**, not parallel threads:
+scenarios are applied serially in the declared deterministic order, each to the
+previous scenario's output. This avoids shared mutable state and makes conflict
+resolution auditable. The execution list and `parent_run_id` chain preserve the
+actual composition order.
+
+Conflict behavior is explicit:
+
+- A packet removed by dropout or packet loss is not available to later scenarios.
+- A packet duplicated by an earlier scenario produces multiple envelopes that
+  later scenarios may each affect.
+- Payload and transport changes compose in stable order; the scenario order is
+  visible in the returned execution records.
+- Independent scenario RNGs remain seeded from each scenario's own seed.
+- Existing `run_campaign` behavior is unchanged and continues to honor caller
+  order for workflows that intentionally require it.
+
+No worker pool, asynchronous execution, concurrent mutation, or nondeterministic
+race resolution is introduced in this phase.
 
 ## Determinism, atomicity, and provenance
 
