@@ -46,10 +46,13 @@ class RawMeasurementEnvelope:
     sequence_number: int
     payload: Any
     source_id: str | None = None
+    processing_time: float | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "sensor_id", _non_empty(self.sensor_id, "sensor_id"))
-        for name in ("acquisition_time", "arrival_time"):
+        for name in ("acquisition_time", "arrival_time", "processing_time"):
+            if name == "processing_time" and getattr(self, name) is None:
+                continue
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise ContractError(f"{name} must be numeric at the raw boundary")
@@ -64,7 +67,60 @@ class RawMeasurementEnvelope:
 
     @property
     def timestamps_finite(self) -> bool:
+        """Whether acquisition and arrival timestamps are finite (Phase 3.2 semantics)."""
         return math.isfinite(self.acquisition_time) and math.isfinite(self.arrival_time)
+
+    @property
+    def processing_timestamp_finite(self) -> bool:
+        """Whether processing_time is absent or finite."""
+        return self.processing_time is None or math.isfinite(self.processing_time)
+
+    @property
+    def transport_latency_s(self) -> float | None:
+        """Arrival minus acquisition; None when either timestamp is non-finite."""
+        if not (math.isfinite(self.acquisition_time) and math.isfinite(self.arrival_time)):
+            return None
+        return self.arrival_time - self.acquisition_time
+
+    @property
+    def processing_wait_s(self) -> float | None:
+        """Processing minus arrival; requires a present, finite processing time."""
+        if self.processing_time is None or not (
+            math.isfinite(self.arrival_time) and math.isfinite(self.processing_time)
+        ):
+            return None
+        return self.processing_time - self.arrival_time
+
+    @property
+    def end_to_end_latency_s(self) -> float | None:
+        """Processing minus acquisition; requires a present, finite processing time."""
+        if self.processing_time is None or not (
+            math.isfinite(self.acquisition_time) and math.isfinite(self.processing_time)
+        ):
+            return None
+        return self.processing_time - self.acquisition_time
+
+    @property
+    def temporal_diagnostics(self) -> tuple[str, ...]:
+        """Report temporal anomalies without rejecting raw transport evidence."""
+        diagnostics = []
+        for name in ("acquisition_time", "arrival_time", "processing_time"):
+            value = getattr(self, name)
+            if value is not None and not math.isfinite(value):
+                diagnostics.append(f"non_finite_{name}")
+        if self.transport_latency_s is not None and self.transport_latency_s < 0:
+            diagnostics.append("arrival_precedes_acquisition")
+        if self.processing_wait_s is not None and self.processing_wait_s < 0:
+            diagnostics.append("processing_precedes_arrival")
+        return tuple(diagnostics)
+
+    @property
+    def temporal_order_valid(self) -> bool:
+        """True when no present processing timestamp precedes arrival."""
+        return (
+            self.processing_timestamp_finite
+            and "processing_precedes_arrival" not in self.temporal_diagnostics
+        )
 
     @property
     def payload_finite(self) -> bool:
@@ -80,4 +136,4 @@ class RawMeasurementEnvelope:
 
     @property
     def is_valid_candidate(self) -> bool:
-        return self.timestamps_finite and self.payload_finite
+        return self.timestamps_finite and self.processing_timestamp_finite and self.payload_finite
