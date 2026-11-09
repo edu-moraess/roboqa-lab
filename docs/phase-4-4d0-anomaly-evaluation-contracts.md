@@ -1,6 +1,15 @@
 # Phase 4.4-D0 — Anomaly Evaluation Contracts
 
-**Status:** implementation checkpoint; manual Colab validation pending.
+**Status: VALIDATED — manual Google Colab.**
+
+Validated production checkpoint: `60e866c7120578fa6a0aafe97126ce3971a9545e`.
+- Targeted `tests/unit/test_ml_evaluation.py`: 33 passed.
+- Full `ruff check roboqa tests`: PASS.
+- Full `python -m compileall -q roboqa tests`: exit code 0.
+- Full `python -m pytest -q`: exit code 0, reached 100%, no failures; aggregate count was not exposed and is not inferred.
+- Evidence is manual Colab, not GitHub Actions. PR #22 remains Draft/open/unmerged.
+
+The implementation scope below describes D0 contracts only; metric aggregation is implemented separately in D1.
 
 ## Purpose
 
@@ -42,7 +51,7 @@ AnomalyEvaluationReport binds the dataset, evaluation split, detector method, UT
 
 ## Planned continuation
 
-1. 4.4-D1 — Evaluation engine: join predictions to dataset references by exact sample identity; compute confusion counts and metrics for overall, run, and scenario scopes; produce deterministic hashes.
+1. 4.4-D1 — Evaluation engine: implemented in `roboqa.ml.evaluation_engine`; manual Colab validation pending on its dedicated branch.
 2. 4.4-D2 — Robustness evaluation: compare both detectors on fixed validation/test scenarios and report scorable coverage and false-positive/negative behavior.
 3. 4.4-D3 — Calibration protocol: only after evaluation evidence is stable, define train/validation-only threshold calibration and freeze the final protocol before one-time TEST evaluation.
 
