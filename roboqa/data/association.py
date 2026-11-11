@@ -91,10 +91,11 @@ def associate_by_timestamp(
 
     # Enforce one-to-one matching. If multiple measurements claim the same
     # reference sample, all claimants remain unresolved.
-    claimants: dict[int, list[int]] = {}
+    claimants: dict[tuple[str, int], list[int]] = {}
     for measurement_index, matches in enumerate(candidates):
         if len(matches) == 1:
-            claimants.setdefault(matches[0][0], []).append(measurement_index)
+            key = (measurements[measurement_index].sensor, matches[0][0])
+            claimants.setdefault(key, []).append(measurement_index)
 
     results: list[MeasurementGroundTruthAssociation] = []
     for measurement_index, matches in enumerate(candidates):
@@ -112,7 +113,8 @@ def associate_by_timestamp(
             ))
         else:
             gt_index, delta = matches[0]
-            if len(claimants.get(gt_index, [])) > 1:
+            claim_key = (measurements[measurement_index].sensor, gt_index)
+            if len(claimants.get(claim_key, [])) > 1:
                 results.append(MeasurementGroundTruthAssociation(
                     measurement_index, None, measurement_sequence_id, ground_truth_sequence_id,
                     "ambiguous", "timestamp_nearest_unique", delta, float(tolerance_s),
