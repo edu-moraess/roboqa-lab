@@ -28,6 +28,16 @@ class MeasurementGroundTruthAssociation:
     evidence: str
 
     def __post_init__(self) -> None:
+        if self.status not in {"matched", "unmatched", "ambiguous"}:
+            raise SchemaError("status must be matched, unmatched, or ambiguous.")
+        if not isinstance(self.method, str) or not self.method.strip():
+            raise SchemaError("method must be an explicit non-empty string.")
+        if not isinstance(self.measurement_sequence_id, str) or not self.measurement_sequence_id.strip():
+            raise SchemaError("measurement_sequence_id must be a non-empty string.")
+        if not isinstance(self.ground_truth_sequence_id, str) or not self.ground_truth_sequence_id.strip():
+            raise SchemaError("ground_truth_sequence_id must be a non-empty string.")
+        if not isinstance(self.evidence, str) or not self.evidence.strip():
+            raise SchemaError("Association evidence must be a non-empty string.")
         if self.measurement_index < 0:
             raise SchemaError("measurement_index must be >= 0.")
         if self.ground_truth_index is not None and self.ground_truth_index < 0:
@@ -36,14 +46,10 @@ class MeasurementGroundTruthAssociation:
             raise SchemaError("matched association requires ground_truth_index.")
         if self.status != "matched" and self.ground_truth_index is not None:
             raise SchemaError("unresolved association cannot reference a ground-truth index.")
-        if not self.measurement_sequence_id.strip() or not self.ground_truth_sequence_id.strip():
-            raise SchemaError("Both sequence identifiers must be explicit.")
         if not np.isfinite(self.tolerance_s) or self.tolerance_s < 0:
             raise SchemaError("tolerance_s must be finite and >= 0.")
         if self.delta_t_s is not None and not np.isfinite(self.delta_t_s):
             raise SchemaError("delta_t_s must be finite or None.")
-        if not self.evidence.strip():
-            raise SchemaError("Association evidence must be explicit.")
 
 
 def associate_by_timestamp(
