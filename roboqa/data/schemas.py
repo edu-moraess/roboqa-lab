@@ -87,6 +87,10 @@ class GroundTruth:
     speed: np.ndarray
     yaw_rate: np.ndarray
     source: str
+    # Original geodetic samples [latitude_deg, longitude_deg, altitude_m].
+    # None for sources that do not provide geodetic observations.
+    geodetic_position: np.ndarray | None = None
+    geodetic_datum: str | None = None
 
     def __post_init__(self) -> None:
         # Validação e normalização (cópias defensivas somente leitura)
@@ -113,6 +117,26 @@ class GroundTruth:
         if np.any(dt < 1e-12):
             raise SchemaError("Timestamps duplicados (ou quase) detectados.")
 
+        if self.geodetic_position is None:
+            if self.geodetic_datum is not None:
+                raise SchemaError("geodetic_datum requires geodetic_position.")
+        else:
+            geodetic = _as_2d_float64(
+                self.geodetic_position, "geodetic_position", expected_cols=3
+            )
+            if geodetic.shape[0] != n:
+                raise SchemaError(
+                    f"geodetic_position shape {geodetic.shape} incompatible with t (N={n})"
+                )
+            if np.any((geodetic[:, 0] < -90.0) | (geodetic[:, 0] > 90.0)):
+                raise SchemaError("geodetic latitude must be within [-90, 90] degrees.")
+            if np.any((geodetic[:, 1] < -180.0) | (geodetic[:, 1] > 180.0)):
+                raise SchemaError("geodetic longitude must be within [-180, 180] degrees.")
+            if not isinstance(self.geodetic_datum, str) or not self.geodetic_datum.strip():
+                raise SchemaError("geodetic_datum must be explicit when geodetic_position is provided.")
+            object.__setattr__(self, "geodetic_position", geodetic)
+            object.__setattr__(self, "geodetic_datum", self.geodetic_datum.strip())
+
         if self.source not in _ALLOWED_SOURCES:
             raise SchemaError(
                 f"source inválido: '{self.source}'. "
@@ -132,6 +156,8 @@ class GroundTruth:
             speed=self.speed.copy(),
             yaw_rate=self.yaw_rate.copy(),
             source=self.source,
+            geodetic_position=(None if self.geodetic_position is None else self.geodetic_position.copy()),
+            geodetic_datum=self.geodetic_datum,
         )
 
 

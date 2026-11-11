@@ -151,6 +151,11 @@ def load_kitti_oxts(
     yaw_unwrapped = np.unwrap(yaw)
     yaw_rate = np.gradient(yaw_unwrapped, dt_approx)
 
+    # Preserve original WGS84 geodetic observations alongside the derived
+    # local Cartesian trajectory. The local projection remains an approximation
+    # and is not an ENU declaration or a validated GeoCore transform.
+    geodetic_position = np.column_stack([lat, lon, arr[:, 2]])
+
     return GroundTruth(
         t=t,
         pos=pos,
@@ -158,6 +163,8 @@ def load_kitti_oxts(
         speed=speed.astype(np.float64),
         yaw_rate=yaw_rate,
         source="kitti_real",
+        geodetic_position=geodetic_position,
+        geodetic_datum="WGS84",
     )
 
 

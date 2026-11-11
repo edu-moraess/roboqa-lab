@@ -397,3 +397,90 @@ def test_copy_produces_independent_readonly_arrays():
     assert not gt2.pos.flags.writeable
     with pytest.raises((ValueError, RuntimeError)):
         gt2.pos[0, 0] = 123.0
+
+
+def test_groundtruth_geodetic_position_is_preserved_and_readonly():
+    geodetic = np.array([
+        [48.982543, 11.390439, 116.466827],
+        [48.982550, 11.390450, 116.467000],
+    ])
+    gt = GroundTruth(
+        t=np.array([0.0, 0.1]),
+        pos=np.zeros((2, 2)),
+        yaw=np.zeros(2),
+        speed=np.ones(2),
+        yaw_rate=np.zeros(2),
+        source="kitti_real",
+        geodetic_position=geodetic,
+        geodetic_datum="WGS84",
+    )
+    geodetic[0, 0] = 0.0
+    assert gt.geodetic_position is not None
+    assert gt.geodetic_position[0, 0] == pytest.approx(48.982543)
+    assert gt.geodetic_datum == "WGS84"
+    assert not gt.geodetic_position.flags.writeable
+
+
+def test_groundtruth_geodetic_requires_explicit_datum():
+    with pytest.raises(SchemaError, match="geodetic_datum must be explicit"):
+        GroundTruth(
+            t=np.array([0.0, 0.1]),
+            pos=np.zeros((2, 2)),
+            yaw=np.zeros(2),
+            speed=np.ones(2),
+            yaw_rate=np.zeros(2),
+            source="kitti_real",
+            geodetic_position=np.zeros((2, 3)),
+        )
+
+
+def test_groundtruth_geodetic_rejects_invalid_latitude():
+    with pytest.raises(SchemaError, match="latitude"):
+        GroundTruth(
+            t=np.array([0.0, 0.1]),
+            pos=np.zeros((2, 2)),
+            yaw=np.zeros(2),
+            speed=np.ones(2),
+            yaw_rate=np.zeros(2),
+            source="kitti_real",
+            geodetic_position=np.array([[91.0, 11.0, 100.0], [48.0, 11.0, 100.0]]),
+            geodetic_datum="WGS84",
+        )
+
+
+def test_groundtruth_copy_preserves_geodetic_coordinates():
+    gt = GroundTruth(
+        t=np.array([0.0, 0.1]),
+        pos=np.zeros((2, 2)),
+        yaw=np.zeros(2),
+        speed=np.ones(2),
+        yaw_rate=np.zeros(2),
+        source="kitti_real",
+        geodetic_position=np.array([[48.0, 11.0, 100.0], [48.1, 11.1, 101.0]]),
+        geodetic_datum="WGS84",
+    )
+    copied = gt.copy()
+    assert copied.geodetic_datum == "WGS84"
+    np.testing.assert_array_equal(copied.geodetic_position, gt.geodetic_position)
+    assert copied.geodetic_position is not gt.geodetic_position
+    assert not copied.geodetic_position.flags.writeable
+
+
+def test_load_kitti_oxts_preserves_original_geodetic_coordinates(tmp_path):
+    d = tmp_path / "oxts_data"
+    d.mkdir()
+    rows = [
+        "48.982543 11.390439 116.466827 0.035279 -0.022039 0.000328 0 0 5.2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0",
+        "48.982550 11.390450 116.467000 0.035280 -0.022040 0.010328 0 0 5.3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0",
+    ]
+    for i, row in enumerate(rows):
+        (d / f"{i:010d}.txt").write_text(row + "\n")
+    from roboqa.data.kitti import load_kitti_oxts
+    gt = load_kitti_oxts(d)
+    assert gt.geodetic_position is not None
+    assert gt.geodetic_datum == "WGS84"
+    np.testing.assert_allclose(
+        gt.geodetic_position,
+        np.array([[48.982543, 11.390439, 116.466827],
+                  [48.982550, 11.390450, 116.467000]]),
+    )
