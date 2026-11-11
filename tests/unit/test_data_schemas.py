@@ -474,7 +474,7 @@ def test_load_kitti_oxts_preserves_original_geodetic_coordinates(tmp_path):
         "48.982550 11.390450 116.467000 0.035280 -0.022040 0.010328 0 0 5.3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0",
     ]
     for i, row in enumerate(rows):
-        (d / f"{i:010d}.txt").write_text(row + "\\n")
+        (d / f"{i:010d}.txt").write_text(row + "\n")
     from roboqa.data.kitti import load_kitti_oxts
     gt = load_kitti_oxts(d)
     assert gt.geodetic_position is not None
