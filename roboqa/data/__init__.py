@@ -1,5 +1,6 @@
 """RoboQA Data Engine — schemas, synthetic generation and KITTI loading."""
 
+from .association import MeasurementGroundTruthAssociation, associate_by_timestamp
 from .kitti import (
     download_kitti_drive,
     get_trajectory,
@@ -11,6 +12,8 @@ from .synthetic import make_synthetic_ground_truth
 
 __all__ = [
     "GroundTruth",
+    "MeasurementGroundTruthAssociation",
+    "associate_by_timestamp",
     "Measurement",
     "SchemaError",
     "validate_measurement_sequence",
